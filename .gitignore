@@ -33,5 +33,11 @@ Thumbs.db
 *.sqlite3
 
 # --- Catatan Sementara (Opsional) ---
-# _PERBAIKAN/  <-- Saya biarkan TIDAK di-ignore karena katanya "Dapur Kotor" mau di-push semua.
+# _PERBAIKAN/  <-- Sudah dipindah ke _archives/
+
+# --- Archives (Video, Docs Lama) ---
+_archives/
+
+# --- Large Files ---
+*.mp4
 MEETING 04020206.mp4
