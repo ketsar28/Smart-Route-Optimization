@@ -6,7 +6,7 @@ from typing import Dict, Any
 
 
 def render_graph_hasil() -> None:
-    st.header("Graph Hasil")
+    st.header("Visualisasi Rute")
     data_validated = st.session_state.get("data_validated", False)
     result = st.session_state.get("result") or st.session_state.get("last_pipeline_result")
     if not data_validated or not result:
@@ -93,7 +93,7 @@ def render_graph_hasil() -> None:
             depot_names.append(name)
     
     if depot_x and depot_y:
-        fig.add_trace(go.Scatter(x=depot_x, y=depot_y, mode="markers+text", marker_symbol="star", marker=dict(size=16, color="yellow", line=dict(color="black", width=1)), text=depot_names, textposition="top center", name="Depots"))
+        fig.add_trace(go.Scatter(x=depot_x, y=depot_y, mode="markers+text", marker_symbol="star", marker=dict(size=16, color="yellow", line=dict(color="black", width=1)), text=depot_names, textposition="top center", name="Depot"))
 
     # draw customers as red circles - use customer_coords to avoid collision
     cust_x = []
@@ -109,15 +109,15 @@ def render_graph_hasil() -> None:
             cust_names.append(name)
     
     if cust_x and cust_y:
-        fig.add_trace(go.Scatter(x=cust_x, y=cust_y, mode="markers+text", marker=dict(size=8, color="red"), text=cust_names, textposition="bottom center", name="Customers"))
+        fig.add_trace(go.Scatter(x=cust_x, y=cust_y, mode="markers+text", marker=dict(size=8, color="red"), text=cust_names, textposition="bottom center", name="Pelanggan"))
 
     fig.update_layout(
         height=600, 
         xaxis_title="X", 
         yaxis_title="Y", 
         showlegend=True,
-        legend=dict(title="Routes", orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        title="Route Visualization (Each route is independent)"
+        legend=dict(title="Rute", orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        title="Visualisasi Rute (Setiap rute independen)"
     )
 
     st.plotly_chart(fig, use_container_width=True)

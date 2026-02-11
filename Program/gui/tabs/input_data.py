@@ -357,7 +357,7 @@ def render_input_data() -> None:
     st.divider()
 
     # ===== SECTION 3: Permintaan Customer =====
-    st.subheader("📦 Demand Customer")
+    st.subheader("📦 Permintaan Pelanggan")
 
     if "points" not in st.session_state or not st.session_state.points.get("customers"):
         st.info("ℹ️ Tambahkan customer di tab 'Input Titik' terlebih dahulu.")
@@ -388,7 +388,7 @@ def render_input_data() -> None:
             tw_data = st.session_state[data_key][i] if i < len(
                 st.session_state[data_key]) else {}
             customer_table_data.append({
-                "Customer": cust.get("name", f"Customer {i+1}"),
+                "Pelanggan": cust.get("name", f"Pelanggan {i+1}"),
                 "Demand": float(tw_data.get("demand", 0)),
                 "TW Start": str(tw_data.get("tw_start", "08:00")),
                 "TW End": str(tw_data.get("tw_end", "17:00")),
@@ -407,7 +407,7 @@ def render_input_data() -> None:
             num_rows="fixed",
             use_container_width=True,
             column_config={
-                "Customer": st.column_config.TextColumn("Customer", disabled=True),
+                "Pelanggan": st.column_config.TextColumn("Pelanggan", disabled=True),
                 "Demand": st.column_config.NumberColumn("Demand", min_value=0, format="%d"),
                 "TW Start": st.column_config.TextColumn("TW Start", help="Format: HH:MM (misal 08:00)"),
                 "TW End": st.column_config.TextColumn("TW End", help="Format: HH:MM (misal 17:00)"),
@@ -471,7 +471,7 @@ def render_input_data() -> None:
         for i, c in enumerate(pts.get("customers", [])):
             node_id = int(c.get("id", i + 1))
             nodes.append(node_id)
-            nodes_map[node_id] = c.get("name", f"Customer {i+1}")
+            nodes_map[node_id] = c.get("name", f"Pelanggan {i+1}")
 
     size = len(nodes)
 
@@ -674,7 +674,7 @@ def render_input_data() -> None:
                         st.session_state["result"] = result
                         st.session_state["data_validated"] = True
                         st.success(
-                            "✅ Komputasi selesai! Lihat hasil di tab 'Hasil Optimasi'.")
+                            "✅ Komputasi selesai! Lihat hasil di tab '📊 Hasil & Visualisasi'.")
                     except Exception as e:
                         st.error(f"❌ Error saat komputasi: {e}")
 

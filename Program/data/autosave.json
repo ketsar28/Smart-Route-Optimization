@@ -385,11 +385,22 @@
       "id": "Fleet C",
       "name": "Fleet C",
       "capacity": 150,
-      "units": 1,
+      "units": 2,
       "available_from": "08:30",
       "available_until": "17:00",
       "enabled": true,
       "fixed_cost": 70000,
+      "variable_cost_per_km": 1000
+    },
+    {
+      "id": "Fleet D",
+      "name": "Fleet D",
+      "capacity": 170,
+      "units": 2,
+      "available_from": "08:30",
+      "available_until": "17:00",
+      "enabled": true,
+      "fixed_cost": 50000,
       "variable_cost_per_km": 1000
     }
   ],

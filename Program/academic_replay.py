@@ -669,10 +669,11 @@ def academic_nearest_neighbor(
                 "to_node": nearest,
                 "distance": round(nearest_dist, 2),
                 "arrival_time": round(arrival_time, 2),
+                "tw_start": tw_start,
                 "tw_end": tw_end,
                 "action": "REJECTED",
-                "reason": f"Arrival {round(arrival_time, 2)} > TW_end {tw_end}",
-                "description": f"Customer {nearest} REJECTED (arrival {round(arrival_time, 2)} > TW_end {tw_end})"
+                "reason": f"Kedatangan {minutes_to_clock(arrival_time)} > Batas Waktu {minutes_to_clock(tw_end)}",
+                "description": f"Pelanggan {nearest} DITOLAK (kedatangan {minutes_to_clock(arrival_time)} > batas waktu {minutes_to_clock(tw_end)})"
             })
             step += 1
             continue
@@ -690,7 +691,7 @@ def academic_nearest_neighbor(
             "tw_start": tw_start,
             "tw_end": tw_end,
             "action": "ACCEPTED",
-            "description": f"Select customer {nearest} (distance = {round(nearest_dist, 2)})"
+            "description": f"Pilih pelanggan {nearest} (jarak = {round(nearest_dist, 2)})"
         })
 
         # Update route
@@ -750,22 +751,22 @@ def academic_nearest_neighbor(
             "from_node": current,
             "to_node": 0,
             "distance": round(return_dist, 2),
-            "description": f"Return to depot (distance = {round(return_dist, 2)})"
+            "description": f"Kembali ke depot (jarak = {round(return_dist, 2)})"
         })
     else:
         # No customers served, just depot
         sequence.append(0)
 
-    # Log unassigned customers if any
-    if unassigned:
-        iteration_logs.append({
-            "phase": "NN",
-            "cluster_id": cluster["cluster_id"],
-            "step": "unassigned",
-            "unassigned_customers": unassigned,
-            "count": len(unassigned),
-            "description": f"{len(unassigned)} customer(s) rejected due to TW violation"
-        })
+    # Log unassigned customers if any - REMOVED to avoid redundancy in table
+    # if unassigned:
+    #     iteration_logs.append({
+    #         "phase": "NN",
+    #         "cluster_id": cluster["cluster_id"],
+    #         "step": "unassigned",
+    #         "unassigned_customers": unassigned,
+    #         "count": len(unassigned),
+    #         "description": f"{len(unassigned)} pelanggan ditolak karena pelanggaran batasan waktu"
+    #     })
 
     # Recalculate demand for served customers only
     served_customers = [c for c in sequence if c != 0]

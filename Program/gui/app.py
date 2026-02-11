@@ -351,7 +351,7 @@ def render_export_section(final_solution: Dict, route_table: pd.DataFrame, final
 
 def main() -> None:
     st.set_page_config(
-        page_title="Optimasi Rute MFVRPTW",
+        page_title="Route Optimizer | Nabilah Eva Nurhayati",
         layout="wide",
         page_icon="🚚"
     )

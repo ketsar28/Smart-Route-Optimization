@@ -33,7 +33,11 @@ def _get_next_customer_id(customers: list) -> int:
 
 
 def render_input_titik() -> None:
-    # Removed redundant header
+    # MIGRATION: Rename "Customer X" to "Pelanggan X" in existing data
+    if "points" in st.session_state:
+        for c in st.session_state["points"].get("customers", []):
+            if c.get("name", "").startswith("Customer "):
+                c["name"] = c["name"].replace("Customer ", "Pelanggan ")
 
     # Initialize session state
     if "points" not in st.session_state:
@@ -55,7 +59,7 @@ def render_input_titik() -> None:
 
         col_s1, col_s2 = st.columns(2)
         col_s1.metric("Depot", total_depots)
-        col_s2.metric("Customer", total_customers)
+        col_s2.metric("Pelanggan", total_customers)
         st.metric("Total Permintaan", f"{total_demand:,.0f}")
 
         st.divider()
@@ -72,7 +76,7 @@ def render_input_titik() -> None:
     with col_mode:
         st.write("**Mode:**")
         point_type = st.radio(
-            "Tipe:", ("Depot", "Customer"), key="point_type_radio",
+            "Tipe:", ("Depot", "Pelanggan"), key="point_type_radio",
             label_visibility="collapsed", horizontal=True
         )
     with col_desc:
@@ -124,7 +128,7 @@ def render_input_titik() -> None:
                         line=dict(width=2, color='darkred')),
             text=cust_names if show_labels else None,
             textposition='top center',
-            name='Customer',
+            name='Pelanggan',
             hovertemplate='<b>%{text}</b><br>X: %{x}<br>Y: %{y}<extra></extra>'
         ))
 
@@ -170,7 +174,7 @@ def render_input_titik() -> None:
                     customer_id = _get_next_customer_id(points["customers"])
                     points["customers"].append({
                         "id": customer_id,
-                        "name": f"Customer {customer_id}",
+                        "name": f"Pelanggan {customer_id}",
                         "x": x_coord,
                         "y": y_coord,
                         "demand": 0.0,
@@ -178,7 +182,7 @@ def render_input_titik() -> None:
                         "service_time": 0
                     })
                     st.toast(
-                        f"✅ Customer {customer_id} ditambahkan!", icon="🏢")
+                        f"✅ Pelanggan {customer_id} ditambahkan!", icon="🏢")
 
                 st.session_state["points"] = points
                 save_to_autosave()
@@ -196,7 +200,7 @@ def render_input_titik() -> None:
     st.subheader("📋 Daftar Titik")
 
     tab_depots, tab_customers = st.tabs(
-        ["🏭 Daftar Depot", "🏢 Daftar Customer"])
+        ["🏭 Daftar Depot", "🏢 Daftar Pelanggan"])
 
     # ------------------ DEPOT EDITOR ------------------
     with tab_depots:
@@ -286,7 +290,7 @@ def render_input_titik() -> None:
                 df_customers_view,
                 column_config={
                     "id": st.column_config.NumberColumn("ID", disabled=True, width="small"),
-                    "name": st.column_config.TextColumn("Nama Customer", required=True),
+                    "name": st.column_config.TextColumn("Nama Pelanggan", required=True),
                     "x": st.column_config.NumberColumn("X", min_value=0, max_value=100, format="%.2f"),
                     "y": st.column_config.NumberColumn("Y", min_value=0, max_value=100, format="%.2f"),
                     "demand": st.column_config.NumberColumn("Demand", min_value=0, format="%d"),
@@ -310,7 +314,7 @@ def render_input_titik() -> None:
 
                     new_c = {
                         "id": int(new_id),
-                        "name": row.get("name") or f"Customer {new_id}",
+                        "name": row.get("name") or f"Pelanggan {new_id}",
                         "x": float(row.get("x", 50.0)),
                         "y": float(row.get("y", 50.0)),
                         "demand": float(row.get("demand", 0.0)),
@@ -340,4 +344,4 @@ def render_input_titik() -> None:
 
         st.session_state["points"] = points
 
-    st.session_state["data_validated"] = False
+

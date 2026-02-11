@@ -11,89 +11,185 @@ def _format_number(value: float) -> str:
     return s.replace(".", ",")
 
 
-def _display_iteration_logs(result: Dict[str, Any]) -> None:
-    """Display ACS and RVND iterations matching thesis format."""
+def _is_academic_mode(result: Dict[str, Any]) -> bool:
+    """Cek apakah result berasal dari academic replay."""
+    return result.get("mode") == "ACADEMIC_REPLAY"
 
-    # Check if we have iteration logs in the result
+
+def _get_iteration_logs(result: Dict[str, Any]):
+    """Ambil ACS dan RVND logs dari kedua format pipeline.
+
+    Standard pipeline: result["acs_data"]["iteration_logs"] & result["rvnd_data"]["iteration_logs"]
+    Academic replay:   result["iteration_logs"] → filter by phase ACS_SUMMARY / RVND_SUMMARY
+    """
     acs_logs = []
     rvnd_logs = []
 
-    # Try to get ACS iteration logs from result structure
     if "acs_data" in result and "iteration_logs" in result["acs_data"]:
+        # --- Standard pipeline ---
         acs_logs = result["acs_data"]["iteration_logs"]
+    elif "iteration_logs" in result:
+        # --- Academic replay: ambil summary per cluster ---
+        acs_logs = [log for log in result["iteration_logs"]
+                    if log.get("phase") == "ACS_SUMMARY"]
 
-    # Try to get RVND iteration logs from result structure
     if "rvnd_data" in result and "iteration_logs" in result["rvnd_data"]:
         rvnd_logs = result["rvnd_data"]["iteration_logs"]
+    elif "iteration_logs" in result:
+        rvnd_logs = [log for log in result["iteration_logs"]
+                     if log.get("phase") == "RVND_SUMMARY"]
 
-    # Display ACS iterations - thesis format
+    return acs_logs, rvnd_logs
+
+
+def _build_routes_map(result: Dict[str, Any]) -> Dict[int, Dict]:
+    """Bangun lookup map cluster_id -> route data dari result.routes[]."""
+    routes_map: Dict[int, Dict] = {}
+    for route in result.get("routes", []):
+        cid = route.get("cluster_id")
+        if cid is not None:
+            routes_map[cid] = route
+    return routes_map
+
+
+def _display_iteration_logs(result: Dict[str, Any]) -> None:
+    """Tampilkan tabel iterasi ACS & RVND sesuai format tesis."""
+
+    acs_logs, rvnd_logs = _get_iteration_logs(result)
+    is_academic = _is_academic_mode(result)
+
+    # Lookup map untuk mengisi field yang kosong di summary logs
+    routes_map = _build_routes_map(result) if is_academic else {}
+
+    # ── Tabel ACS ──
     if acs_logs:
-        st.markdown("### 🐜 Hasil Pengklasteran ACS (Ant Colony System)")
-        st.markdown("*Solusi dengan Clustering + Nearest Neighboorhood*")
+        st.markdown("### 🐜 Hasil Konstruksi Rute ACS (Ant Colony System)")
+        st.markdown("*Solusi awal sebelum optimasi lokal RVND*")
 
         acs_df_data = []
-        for log in acs_logs:
+        for idx, log in enumerate(acs_logs, 1):
+            cluster_id = log.get("cluster_id", "")
             distance = log.get('total_distance', 0)
-            travel_time = log.get('total_travel_time', 0)
-            objective = log.get('objective', 0)
-            acs_df_data.append({
-                "Iterasi": log.get("iteration_id", ""),
-                "Cluster": log.get("cluster_id", ""),
-                "Jarak (km)": f"{distance:.2f}",
-                "Waktu Perjalanan": f"{travel_time:.2f}",
+            route_seq = log.get("route_sequence", "-")
+
+            # Ambil data lengkap dari routes map jika ada
+            route_data = routes_map.get(cluster_id, {})
+            objective = log.get('objective') or route_data.get('objective', 0)
+
+            # Hitung jumlah pelanggan dari urutan rute (exclude depot = 0)
+            n_customers = 0
+            if route_seq and route_seq != "-":
+                nodes = [n.strip() for n in route_seq.replace("-", ",").split(",") if n.strip()]
+                n_customers = sum(1 for n in nodes if n != "0")
+
+            row = {
+                "Cluster": cluster_id,
                 "Kendaraan": log.get("vehicle_type", ""),
-                "Fungsi Objektif (Z)": f"{objective:.2f}"
-            })
+                "Rute": route_seq,
+                "Jarak (km)": f"{distance:.2f}",
+            }
+
+            if is_academic:
+                row["Jml Pelanggan"] = n_customers
+            else:
+                travel_time = log.get('total_travel_time', distance)
+                row["Waktu Tempuh"] = f"{travel_time:.2f}"
+
+            row["Fungsi Objektif (Z)"] = f"{objective:.2f}"
+            acs_df_data.append(row)
 
         if acs_df_data:
             df_acs = pd.DataFrame(acs_df_data)
             st.dataframe(df_acs, use_container_width=True, hide_index=True)
 
         with st.expander("📋 Lihat Detail Rute ACS"):
-            for log in acs_logs:
-                iter_id = log.get('iteration_id', '?')
+            for idx, log in enumerate(acs_logs, 1):
                 cluster_id = log.get('cluster_id', '?')
-                st.markdown(f"**Iterasi {iter_id} - Cluster {cluster_id}**")
-                routes = log.get("routes_snapshot", [])
-                for idx, route in enumerate(routes):
-                    st.text(f"Rute {idx + 1}: {route}")
+                route_seq = log.get('route_sequence', '')
+                vehicle = log.get('vehicle_type', '')
+                distance = log.get('total_distance', 0)
+
+                route_data = routes_map.get(cluster_id, {})
+                objective = log.get('objective') or route_data.get('objective', 0)
+
+                st.markdown(f"**Cluster {cluster_id}** — {vehicle}")
+                if route_seq:
+                    st.text(f"  Urutan Rute : {route_seq}")
+                st.text(f"  Jarak       : {distance:.2f} km")
+                st.text(f"  Objektif (Z): {objective:.2f}")
+
+                # Standard pipeline: tampilkan routes_snapshot
+                snap = log.get("routes_snapshot", [])
+                for ri, route in enumerate(snap):
+                    st.text(f"  Snapshot Rute {ri + 1}: {route}")
                 st.divider()
 
-    # Display RVND iterations - thesis format
+    # ── Tabel RVND ──
     if rvnd_logs:
         st.markdown(
-            "### 🔄 Hasil RVND (Randomized Variable Neighborhood Descent)")
-        st.markdown("*Optimasi lokal untuk memperbaiki solusi*")
+            "### 🔄 Hasil Optimasi RVND (Randomized Variable Neighborhood Descent)")
+        st.markdown("*Hasil setelah optimasi lokal — solusi akhir*")
 
         rvnd_df_data = []
-        for log in rvnd_logs:
+        for idx, log in enumerate(rvnd_logs, 1):
+            cluster_id = log.get("cluster_id", "")
             distance = log.get('total_distance', 0)
-            travel_time = log.get('total_travel_time', 0)
-            objective = log.get('objective', 0)
-            rvnd_df_data.append({
-                "Iterasi": log.get("iteration_id", ""),
-                "Cluster": log.get("cluster_id", ""),
-                "Fase": log.get("phase", "RVND").replace("RVND-", ""),
+            route_seq = log.get("route_sequence", "-")
+
+            route_data = routes_map.get(cluster_id, {})
+            objective = log.get('objective') or route_data.get('objective', 0)
+
+            # Hitung jumlah pelanggan
+            n_customers = 0
+            if route_seq and route_seq != "-":
+                nodes = [n.strip() for n in route_seq.replace("-", ",").split(",") if n.strip()]
+                n_customers = sum(1 for n in nodes if n != "0")
+
+            vehicle = log.get("vehicle_type", "") or route_data.get("vehicle_type", "")
+
+            row = {
+                "Cluster": cluster_id,
+                "Kendaraan": vehicle,
+                "Rute": route_seq,
                 "Jarak (km)": f"{distance:.2f}",
-                "Waktu Perjalanan": f"{travel_time:.2f}",
-                "Kendaraan": log.get("vehicle_type", ""),
-                "Fungsi Objektif (Z)": f"{objective:.2f}"
-            })
+            }
+
+            if is_academic:
+                row["Jml Pelanggan"] = n_customers
+            else:
+                travel_time = log.get('total_travel_time', distance)
+                row["Waktu Tempuh"] = f"{travel_time:.2f}"
+                phase_raw = log.get("phase", "RVND")
+                row["Fase"] = phase_raw.replace("RVND-", "")
+
+            row["Fungsi Objektif (Z)"] = f"{objective:.2f}"
+            rvnd_df_data.append(row)
 
         if rvnd_df_data:
             df_rvnd = pd.DataFrame(rvnd_df_data)
             st.dataframe(df_rvnd, use_container_width=True, hide_index=True)
 
         with st.expander("📋 Lihat Detail Rute RVND"):
-            for log in rvnd_logs:
-                iter_id = log.get('iteration_id', '?')
+            for idx, log in enumerate(rvnd_logs, 1):
                 cluster_id = log.get('cluster_id', '?')
-                phase = log.get('phase', '')
-                st.markdown(
-                    f"**Iterasi {iter_id} - Cluster {cluster_id} - {phase}**")
-                routes = log.get("routes_snapshot", [])
-                for idx, route in enumerate(routes):
-                    st.text(f"Rute {idx + 1}: {route}")
+                route_seq = log.get('route_sequence', '')
+                vehicle = log.get('vehicle_type', '')
+                distance = log.get('total_distance', 0)
+
+                route_data = routes_map.get(cluster_id, {})
+                objective = log.get('objective') or route_data.get('objective', 0)
+                if not vehicle:
+                    vehicle = route_data.get('vehicle_type', '')
+
+                st.markdown(f"**Cluster {cluster_id}** — {vehicle}")
+                if route_seq:
+                    st.text(f"  Urutan Rute : {route_seq}")
+                st.text(f"  Jarak       : {distance:.2f} km")
+                st.text(f"  Objektif (Z): {objective:.2f}")
+
+                snap = log.get("routes_snapshot", [])
+                for ri, route in enumerate(snap):
+                    st.text(f"  Snapshot Rute {ri + 1}: {route}")
                 st.divider()
 
     if not acs_logs and not rvnd_logs:
@@ -103,7 +199,6 @@ def _display_iteration_logs(result: Dict[str, Any]) -> None:
 def _build_depot_summary_from_result(points: Dict[str, Any], result: Dict[str, Any]) -> Dict[int, Dict]:
     # points: {"depots": [...], "customers": [...]} entries have id,name,x,y
     depots = points.get("depots", [])
-    customers = points.get("customers", [])
     depot_ids = [int(d.get("id", idx)) for idx, d in enumerate(depots)]
     depot_map = {int(d.get("id", i)): d.get("name", "")
                  for i, d in enumerate(depots)}
@@ -150,36 +245,56 @@ def _build_depot_summary_from_result(points: Dict[str, Any], result: Dict[str, A
     return per_depot
 
 
-def render_hasil() -> None:
-    st.header("Hasil")
+def _render_summary_academic(result: Dict[str, Any]) -> None:
+    """Render ringkasan khusus academic replay yang punya data biaya sendiri."""
+    costs = result.get("costs", {})
+    routes = result.get("routes", [])
+    dataset = result.get("dataset", {})
+    depot_info = dataset.get("depot", {})
+    depot_name = depot_info.get("name", "Depot")
 
-    data_validated = st.session_state.get("data_validated", False)
-    result = st.session_state.get(
-        "result") or st.session_state.get("last_pipeline_result")
+    total_distance = sum(r.get("total_distance", 0) for r in routes)
+    total_fixed = costs.get("total_fixed_cost", 0)
+    total_variable = costs.get("total_variable_cost", 0)
+    total_cost = costs.get("total_cost", 0)
 
-    if not data_validated or not result:
-        st.info(
-            "Belum ada hasil. Tekan 'Hasil' di menu 'Input Data' untuk menjalankan komputasi terlebih dahulu.")
-        return
+    # Kumpulkan semua customer dari semua rute
+    all_customers: List[int] = []
+    for route in routes:
+        seq = route.get("sequence", [])
+        for node in seq:
+            if int(node) != 0:
+                all_customers.append(int(node))
 
-    # Display iteration logs FIRST (academic requirement)
-    _display_iteration_logs(result)
+    cust_str = ", ".join(str(c) for c in all_customers) if all_customers else "-"
 
-    # Display summary table (DataFrame)
-    st.divider()
-    st.subheader("📈 Ringkasan Solusi Akhir")
+    summary_data = [{
+        "Depot ID": depot_info.get("id", 0),
+        "Nama Depot": depot_name,
+        "Total Jarak (km)": f"{total_distance:,.2f}",
+        "Biaya Tetap (Rp)": f"{total_fixed:,.0f}",
+        "Biaya Variabel (Rp)": f"{total_variable:,.0f}",
+        "Total Biaya (Rp)": f"{total_cost:,.0f}",
+        "Jumlah Pelanggan": len(all_customers),
+        "Daftar Pelanggan": cust_str
+    }]
 
+    df_summary = pd.DataFrame(summary_data)
+    st.dataframe(df_summary, use_container_width=True, hide_index=True)
+    st.info(f"📍 **Total Jarak Keseluruhan:** {_format_number(total_distance)} km")
+
+
+def _render_summary_standard(result: Dict[str, Any]) -> None:
+    """Render ringkasan untuk standard pipeline."""
     points = st.session_state.get("points", {"depots": [], "customers": []})
     per_depot = _build_depot_summary_from_result(points, result)
 
     summary_data = []
     total_all_distance = 0.0
 
-    # Present in order of depot index (0..)
     user_vehicles = st.session_state.get("user_vehicles", [])
     vehicle_map = {v["id"]: v for v in user_vehicles}
 
-    # Present in order of depot index (0..)
     total_fixed_cost = 0.0
     total_variable_cost = 0.0
     total_all_cost = 0.0
@@ -189,33 +304,20 @@ def render_hasil() -> None:
         total_all_distance += float(dist)
 
         cust_list = info.get("customers", [])
-        if cust_list:
-            cust_str = ", ".join(str(c) for c in cust_list)
-            status = f"{len(cust_list)} Customer"
-        else:
-            cust_str = "-"
-            status = "Tidak ada customer"
+        cust_str = ", ".join(str(c) for c in cust_list) if cust_list else "-"
 
-        # Calculate costs for routes originating from this depot
+        # Hitung biaya per depot
         depot_fixed_cost = 0.0
         depot_variable_cost = 0.0
 
-        # We need to scan routes to see which ones belong here.
-        # Since per_depot doesn't store route objects directly, we infer from routes list.
         for route in result.get("routes", []):
-            # Simplified match: if route starts with this depot (usually implied for now as we have 1 depot)
-            # Ideally we check route['stops'][0]['node_id']
             stops = route.get("stops", [])
             if stops and stops[0].get("node_id") == depot_id:
                 v_type = route.get("vehicle_type")
                 v_dist = route.get("total_distance", 0)
-
                 vehicle = vehicle_map.get(v_type, {})
-                f_cost = vehicle.get("fixed_cost", 0)
-                v_cost_per_km = vehicle.get("variable_cost_per_km", 0)
-
-                depot_fixed_cost += f_cost
-                depot_variable_cost += (v_dist * v_cost_per_km)
+                depot_fixed_cost += vehicle.get("fixed_cost", 0)
+                depot_variable_cost += (v_dist * vehicle.get("variable_cost_per_km", 0))
 
         total_fixed_cost += depot_fixed_cost
         total_variable_cost += depot_variable_cost
@@ -229,21 +331,45 @@ def render_hasil() -> None:
             "Biaya Tetap (Rp)": f"{depot_fixed_cost:,.0f}",
             "Biaya Variabel (Rp)": f"{depot_variable_cost:,.0f}",
             "Total Biaya (Rp)": f"{depot_total_cost:,.0f}",
-            "Jumlah Customer": len(cust_list),
-            "Daftar Customer": cust_str
+            "Jumlah Pelanggan": len(cust_list),
+            "Daftar Pelanggan": cust_str
         })
 
     if summary_data:
         df_summary = pd.DataFrame(summary_data)
         st.dataframe(df_summary, use_container_width=True, hide_index=True)
-
-        # Total metrics
         st.info(
             f"📍 **Total Jarak Keseluruhan:** {_format_number(total_all_distance)} km")
     else:
         st.warning("Tidak ada data ringkasan depot.")
 
-    # Merged Visualization Section
+
+def render_hasil() -> None:
+    st.header("Hasil")
+
+    data_validated = st.session_state.get("data_validated", False)
+    result = st.session_state.get(
+        "result") or st.session_state.get("last_pipeline_result")
+
+    if not data_validated or not result:
+        st.info(
+            "Belum ada hasil. Tekan 'Lanjutkan Proses' di tab Input Data atau "
+            "jalankan optimasi di tab Proses Optimasi terlebih dahulu.")
+        return
+
+    # Tampilkan tabel iterasi
+    _display_iteration_logs(result)
+
+    # Ringkasan Solusi Akhir
+    st.divider()
+    st.subheader("📈 Ringkasan Solusi Akhir")
+
+    if _is_academic_mode(result):
+        _render_summary_academic(result)
+    else:
+        _render_summary_standard(result)
+
+    # Visualisasi
     st.divider()
     try:
         from graph_hasil import render_graph_hasil
