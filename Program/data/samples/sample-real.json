@@ -359,8 +359,8 @@
   },
   "user_vehicles": [
     {
-      "id": "Vehicle A",
-      "name": "Vehicle A",
+      "id": "Fleet A",
+      "name": "Fleet A",
       "capacity": 60,
       "units": 2,
       "available_from": "08:30",
@@ -370,8 +370,8 @@
       "variable_cost_per_km": 1000
     },
     {
-      "id": "Vehicle B",
-      "name": "Vehicle B",
+      "id": "Fleet B",
+      "name": "Fleet B",
       "capacity": 100,
       "units": 2,
       "available_from": "08:30",
@@ -381,8 +381,8 @@
       "variable_cost_per_km": 1000
     },
     {
-      "id": "Vehicle C",
-      "name": "Vehicle C",
+      "id": "Fleet C",
+      "name": "Fleet C",
       "capacity": 150,
       "units": 1,
       "available_from": "08:30",

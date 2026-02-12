@@ -32,7 +32,7 @@ def _get_next_customer_id(customers: list) -> int:
     return max(int(c.get("id", 1)) for c in customers) + 1
 
 
-def render_input_titik() -> None:
+def render_input_titik(show_labels: bool = True, show_grid: bool = True) -> None:
     # MIGRATION: Rename "Customer X" to "Pelanggan X" in existing data
     if "points" in st.session_state:
         for c in st.session_state["points"].get("customers", []):
@@ -64,25 +64,18 @@ def render_input_titik() -> None:
 
         st.divider()
 
-        st.header("⚙️ Kontrol Peta")
-        show_labels = st.toggle("Tampilkan Label", value=True)
-        show_grid = st.toggle("Tampilkan Grid", value=True)
+        # st.header("⚙️ Kontrol Peta")
+        # show_labels = st.toggle("Tampilkan Label", value=True)
+        # show_grid = st.toggle("Tampilkan Grid", value=True)
 
     # Canvas with Plotly
     st.subheader("🗺️ Peta Interaktif")
 
-    # Layout for Mode Selection and Map Description
-    col_mode, col_desc = st.columns([1, 3])
-    with col_mode:
-        st.write("**Mode:**")
-        point_type = st.radio(
-            "Tipe:", ("Depot", "Pelanggan"), key="point_type_radio",
-            label_visibility="collapsed", horizontal=True
-        )
-    with col_desc:
-        st.info(
-            f"Klik pada peta untuk menambahkan **{point_type}** baru.", icon="ℹ️")
-
+    st.write("**Mode:**")
+    point_type = st.radio(
+        "Tipe:", ("Depot", "Pelanggan"), key="point_type_radio",
+        label_visibility="collapsed", horizontal=True
+    )
     st.session_state["point_type"] = point_type
 
     # Create interactive figure
@@ -109,7 +102,7 @@ def render_input_titik() -> None:
             mode='markers+text' if show_labels else 'markers',
             marker=dict(size=15, color='gold', symbol='star',
                         line=dict(width=2, color='orange')),
-            text=depot_names if show_labels else None,
+            text=depot_names,
             textposition='top center',
             name='Depot',
             hovertemplate='<b>%{text}</b><br>X: %{x}<br>Y: %{y}<extra></extra>'
@@ -126,7 +119,7 @@ def render_input_titik() -> None:
             mode='markers+text' if show_labels else 'markers',
             marker=dict(size=12, color='red', symbol='circle',
                         line=dict(width=2, color='darkred')),
-            text=cust_names if show_labels else None,
+            text=cust_names,
             textposition='top center',
             name='Pelanggan',
             hovertemplate='<b>%{text}</b><br>X: %{x}<br>Y: %{y}<extra></extra>'

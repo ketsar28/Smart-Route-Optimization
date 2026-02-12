@@ -1,0 +1,205 @@
+{
+  "points": {
+    "depots": [
+      {
+        "id": 0,
+        "name": "Gudang Farmasi (Singosari)",
+        "x": 0,
+        "y": 8.5,
+        "time_window": {
+          "start": "06:00",
+          "end": "12:00"
+        },
+        "service_time": 0
+      }
+    ],
+    "customers": [
+      {
+        "id": 1,
+        "name": "RS Saiful Anwar",
+        "x": 0.2,
+        "y": 1.5,
+        "demand": 15,
+        "time_window": {
+          "start": "06:30",
+          "end": "08:00"
+        },
+        "service_time": 20
+      },
+      {
+        "id": 2,
+        "name": "RS Lavalette",
+        "x": 1.5,
+        "y": 2.2,
+        "demand": 10,
+        "time_window": {
+          "start": "07:00",
+          "end": "09:00"
+        },
+        "service_time": 15
+      },
+      {
+        "id": 3,
+        "name": "RS Hermina",
+        "x": 0.5,
+        "y": -1.0,
+        "demand": 12,
+        "time_window": {
+          "start": "07:30",
+          "end": "09:30"
+        },
+        "service_time": 15
+      },
+      {
+        "id": 4,
+        "name": "RS Soepraoen",
+        "x": -1.0,
+        "y": -2.0,
+        "demand": 20,
+        "time_window": {
+          "start": "08:00",
+          "end": "10:00"
+        },
+        "service_time": 25
+      },
+      {
+        "id": 5,
+        "name": "RS UB (Soekarno Hatta)",
+        "x": -2.5,
+        "y": 4.5,
+        "demand": 8,
+        "time_window": {
+          "start": "08:30",
+          "end": "11:00"
+        },
+        "service_time": 10
+      }
+    ]
+  },
+  "inputData": {
+    "customerTimeWindows": [
+      {
+        "demand": 15,
+        "tw_start": "06:30",
+        "tw_end": "08:00",
+        "service_time": 20
+      },
+      {
+        "demand": 10,
+        "tw_start": "07:00",
+        "tw_end": "09:00",
+        "service_time": 15
+      },
+      {
+        "demand": 12,
+        "tw_start": "07:30",
+        "tw_end": "09:30",
+        "service_time": 15
+      },
+      {
+        "demand": 20,
+        "tw_start": "08:00",
+        "tw_end": "10:00",
+        "service_time": 25
+      },
+      {
+        "demand": 8,
+        "tw_start": "08:30",
+        "tw_end": "11:00",
+        "service_time": 10
+      }
+    ],
+    "customerDemand": [
+      15,
+      10,
+      12,
+      20,
+      8
+    ],
+    "distanceMatrix": [
+      [
+        0.0,
+        7.0029,
+        6.4761,
+        9.5131,
+        10.5475,
+        4.717
+      ],
+      [
+        7.0029,
+        0.0,
+        1.4765,
+        2.5179,
+        3.7,
+        4.0361
+      ],
+      [
+        6.4761,
+        1.4765,
+        0.0,
+        3.3526,
+        4.8877,
+        4.6141
+      ],
+      [
+        9.5131,
+        2.5179,
+        3.3526,
+        0.0,
+        1.8028,
+        6.265
+      ],
+      [
+        10.5475,
+        3.7,
+        4.8877,
+        1.8028,
+        0.0,
+        6.6708
+      ],
+      [
+        4.717,
+        4.0361,
+        4.6141,
+        6.265,
+        6.6708,
+        0.0
+      ]
+    ],
+    "distance_multiplier": 1.2
+  },
+  "user_vehicles": [
+    {
+      "id": "Fleet A - Motor",
+      "name": "Fleet A - Motor",
+      "capacity": 30,
+      "units": 4,
+      "available_from": "06:00",
+      "available_until": "14:00",
+      "enabled": true,
+      "fixed_cost": 15000,
+      "variable_cost_per_km": 500
+    },
+    {
+      "id": "Fleet B - Blind Van",
+      "name": "Fleet B - Blind Van",
+      "capacity": 100,
+      "units": 1,
+      "available_from": "06:00",
+      "available_until": "14:00",
+      "enabled": true,
+      "fixed_cost": 50000,
+      "variable_cost_per_km": 1200
+    }
+  ],
+  "acs_params": {
+    "alpha": 2.0,
+    "beta": 1.0,
+    "rho": 0.1,
+    "q0": 0.9,
+    "num_ants": 5,
+    "max_iterations": 30
+  },
+  "kapasitas_kendaraan": 30,
+  "iterasi": 30
+}

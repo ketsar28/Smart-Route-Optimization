@@ -435,36 +435,54 @@ def main() -> None:
     # TABS UTAMA
     # ============================================================
     # ============================================================
+    # ============================================================
+    # SIDEBAR GLOBAL (Kontrol Peta)
+    # ============================================================
+    with st.sidebar:
+        # Pindahkan Statistik Data Input Titik ke sini? Tidak, biarkan di modulnya.
+        # Tapi Kontrol Peta kita buat global agar tidak duplikat.
+        st.header("⚙️ Kontrol Peta")
+        show_labels = st.toggle("Tampilkan Label", value=True, key="global_show_labels")
+        show_grid = st.toggle("Tampilkan Grid", value=True, key="global_show_grid")
+        st.divider()
+
+    # ============================================================
     # TABS UTAMA
     # ============================================================
     if render_academic_replay is not None:
-        tab1, tab2, tab3, tab4 = st.tabs([
+        tab1, tab2, tab_opt, tab_viz, tab_res = st.tabs([
             "📍 Input Titik",
             "📋 Input Data",
-            "📊 Hasil & Visualisasi",
-            "🔬 Proses Optimasi"
+            "🔬 Proses Optimasi",
+            "🗺️ Hasil Visualisasi",
+            "📊 Detail Penjadwalan"
         ])
     else:
-        tab1, tab2, tab3 = st.tabs([
-            "📍 Input Titik",
+        # Fallback setup if academic module fails, but effectively we strive for the above
+        tab1, tab2, tab_opt, tab_viz, tab_res = st.tabs([
+            "📍 Input Titik", 
             "📋 Input Data",
-            "📊 Hasil & Visualisasi"
+            "🔬 Proses Optimasi",
+            "🗺️ Hasil Visualisasi", 
+            "📊 Detail Penjadwalan" 
         ])
-        tab4 = None
 
     with tab1:
-        render_input_titik()
+        render_input_titik(show_labels=show_labels, show_grid=show_grid)
     with tab2:
         render_input_data()
-    with tab3:
-        render_hasil()
-    if tab4 is not None:
-        with tab4:
+    with tab_opt:
+        if render_academic_replay:
             render_academic_replay()
+        else:
+            st.error("Modul Optimasi tidak tersedia.")
+    with tab_viz:
+        render_graph_hasil(show_labels=show_labels, show_grid=show_grid)
+    with tab_res:
+        render_hasil()
 
     # ============================================================
   # About section
-    st.sidebar.markdown("---")
     st.sidebar.markdown("### ℹ️ Tentang Aplikasi")
     st.sidebar.info(
         "Dashboard ini menyediakan antarmuka untuk input data dan menampilkan hasil optimasi rute. "

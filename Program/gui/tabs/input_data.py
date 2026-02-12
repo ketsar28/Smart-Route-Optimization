@@ -100,121 +100,98 @@ def render_input_data() -> None:
 
         # Display existing vehicles
         if user_vehicles:
-            # Header row for labels
-            # st.markdown("**Daftar Kendaraan:**")
-            header_cols = st.columns([2, 1.2, 0.8, 1, 1, 1.2, 1.2, 0.5])
-            with header_cols[0]:
-                st.markdown("**Nama**")
-            with header_cols[1]:
-                st.markdown("**Kapasitas**")
-            with header_cols[2]:
-                st.markdown("**Unit**")
-            with header_cols[3]:
-                st.markdown("**Jam Mulai**")
-            with header_cols[4]:
-                st.markdown("**Jam Selesai**")
-            with header_cols[5]:
-                st.markdown("**Fixed Cost**")
-            with header_cols[6]:
-                st.markdown("**Cost/km**")
-            with header_cols[7]:
-                st.markdown("")
-
+            # Card Layout for Vehicles (Desktop & Mobile friendly)
+            # No header row needed for card layout
             for idx, vehicle in enumerate(user_vehicles):
                 vehicle_name = vehicle.get(
                     "name", f"Fleet {chr(ord('A') + idx)}")
                 capacity = vehicle.get("capacity", 100)
 
-                # Create input row for each vehicle
-                col_check, col_cap, col_units, col_from, col_until, col_fixed, col_var, col_del = st.columns(
-                    [2, 1.2, 0.8, 1, 1, 1.2, 1.2, 0.5])
+                # Create card container for each vehicle
+                with st.container(border=True):
+                    # --- ROW 1: Title Only (Clean) ---
+                    st.markdown(f"#### 🚛 {vehicle_name}")
+                    
+                    # --- ROW 2: Inputs (Grid) ---
+                    # Capacity & Units
+                    c_row2_1, c_row2_2 = st.columns(2)
+                    with c_row2_1:
+                        cap_val = st.number_input(
+                            "Kapasitas",
+                            min_value=1,
+                            value=capacity,
+                            key=f"veh_cap_{idx}"
+                        )
+                        st.session_state["user_vehicles"][idx]["capacity"] = cap_val
 
-                with col_check:
-                    enabled = st.checkbox(
-                        f"🚛 {vehicle_name}",
-                        value=vehicle.get("enabled", True),
-                        key=f"veh_enabled_{idx}"
-                    )
-                    st.session_state["user_vehicles"][idx]["enabled"] = enabled
+                    with c_row2_2:
+                        units_val = st.number_input(
+                            "Jumlah Unit",
+                            min_value=1, max_value=10,
+                            value=vehicle.get("units", 2),
+                            key=f"veh_units_{idx}"
+                        )
+                        st.session_state["user_vehicles"][idx]["units"] = units_val
+
+                    # Time Window
+                    c_row3_1, c_row3_2 = st.columns(2)
+                    with c_row3_1:
+                        from_val = st.text_input(
+                            "Jam Mulai",
+                            value=vehicle.get("available_from", "08:00"),
+                            key=f"veh_from_{idx}"
+                        )
+                        st.session_state["user_vehicles"][idx]["available_from"] = from_val
+
+                    with c_row3_2:
+                        until_val = st.text_input(
+                            "Jam Selesai",
+                            value=vehicle.get("available_until", "17:00"),
+                            key=f"veh_until_{idx}"
+                        )
+                        st.session_state["user_vehicles"][idx]["available_until"] = until_val
+
+                    # Costs
+                    c_row4_1, c_row4_2 = st.columns(2)
+                    with c_row4_1:
+                        fixed_cost = st.number_input(
+                            "Fixed Cost",
+                            min_value=0,
+                            value=vehicle.get("fixed_cost", 50000),
+                            step=1000,
+                            key=f"veh_fixed_{idx}"
+                        )
+                        st.session_state["user_vehicles"][idx]["fixed_cost"] = fixed_cost
+
+                    with c_row4_2:
+                        var_cost = st.number_input(
+                            "Cost/km",
+                            min_value=0,
+                            value=vehicle.get("variable_cost_per_km", 1000),
+                            step=100,
+                            key=f"veh_var_{idx}"
+                        )
+                        st.session_state["user_vehicles"][idx]["variable_cost_per_km"] = var_cost
+
+                    # --- ROW 3: Footer Actions (Toggle Active | Delete) ---
+                    st.divider()
+                    c_act_1, c_act_2 = st.columns([0.8, 0.2], vertical_alignment="center")
+                    
+                    with c_act_1:
+                        enabled = st.toggle(
+                            "Status: Aktif",
+                            value=vehicle.get("enabled", True),
+                            key=f"veh_enabled_{idx}"
+                        )
+                        st.session_state["user_vehicles"][idx]["enabled"] = enabled
+
+                    with c_act_2:
+                         if st.button("🗑️ Hapus", key=f"del_veh_{idx}", help=f"Hapus {vehicle_name}"):
+                            st.session_state["user_vehicles"].pop(idx)
+                            save_to_autosave()
+                            st.rerun()
+                    
                     save_to_autosave()
-
-                with col_cap:
-                    cap_val = st.number_input(
-                        "Kapasitas",
-                        min_value=1,
-                        value=capacity,
-                        key=f"veh_cap_{idx}",
-                        disabled=not enabled,
-                        label_visibility="collapsed"
-                    )
-                    st.session_state["user_vehicles"][idx]["capacity"] = cap_val
-                    save_to_autosave()
-
-                with col_units:
-                    units_val = st.number_input(
-                        "Jumlah Unit",
-                        min_value=1, max_value=10,
-                        value=vehicle.get("units", 2),
-                        key=f"veh_units_{idx}",
-                        disabled=not enabled,
-                        label_visibility="collapsed"
-                    )
-                    st.session_state["user_vehicles"][idx]["units"] = units_val
-                    save_to_autosave()
-
-                with col_from:
-                    from_val = st.text_input(
-                        "Jam Mulai",
-                        value=vehicle.get("available_from", "08:00"),
-                        key=f"veh_from_{idx}",
-                        disabled=not enabled,
-                        label_visibility="collapsed"
-                    )
-                    st.session_state["user_vehicles"][idx]["available_from"] = from_val
-                    save_to_autosave()
-
-                with col_until:
-                    until_val = st.text_input(
-                        "Jam Selesai",
-                        value=vehicle.get("available_until", "17:00"),
-                        key=f"veh_until_{idx}",
-                        disabled=not enabled,
-                        label_visibility="collapsed"
-                    )
-                    st.session_state["user_vehicles"][idx]["available_until"] = until_val
-                    save_to_autosave()
-
-                with col_fixed:
-                    fixed_cost = st.number_input(
-                        "Fixed Cost",
-                        min_value=0,
-                        value=vehicle.get("fixed_cost", 50000),
-                        step=1000,
-                        key=f"veh_fixed_{idx}",
-                        disabled=not enabled,
-                        label_visibility="collapsed"
-                    )
-                    st.session_state["user_vehicles"][idx]["fixed_cost"] = fixed_cost
-                    save_to_autosave()
-
-                with col_var:
-                    var_cost = st.number_input(
-                        "Variable Cost/km",
-                        min_value=0,
-                        value=vehicle.get("variable_cost_per_km", 1000),
-                        step=100,
-                        key=f"veh_var_{idx}",
-                        disabled=not enabled,
-                        label_visibility="collapsed"
-                    )
-                    st.session_state["user_vehicles"][idx]["variable_cost_per_km"] = var_cost
-                    save_to_autosave()
-
-                with col_del:
-                    if st.button("🗑️", key=f"del_veh_{idx}", help=f"Hapus {vehicle_name}"):
-                        st.session_state["user_vehicles"].pop(idx)
-                        save_to_autosave()
-                        st.rerun()
         else:
             st.info(
                 "ℹ️ Belum ada kendaraan. Klik tombol di bawah untuk menambahkan kendaraan pertama.")
@@ -438,6 +415,20 @@ def render_input_data() -> None:
 
     st.divider()
 
+    # ===== SUMMARY METRICS =====
+    # Calculate totals based on current session state data
+    if "points" in st.session_state and st.session_state.points.get("customers"):
+        current_data = st.session_state.get(data_key, [])
+        total_demand = sum(item.get("demand", 0) for item in current_data)
+        total_service = sum(item.get("service_time", 0) for item in current_data)
+
+        st.markdown("##### 📊 Ringkasan Total")
+        m1, m2 = st.columns(2)
+        m1.metric("Total Permintaan (Demand)", f"{total_demand:,.0f}")
+        m2.metric("Total Waktu Layanan (Service)", f"{total_service:,.0f} menit")
+
+    st.divider()
+
     # ===== SECTION 4: Tabel Jarak (Distance Matrix) =====
     st.subheader("📏 Matriks Jarak")
 
@@ -652,8 +643,14 @@ def render_input_data() -> None:
             )
 
     with button_cols[1]:
-        if st.button("▶️ Lanjutkan Proses", use_container_width=True, key="btn_process", type="primary"):
+        if st.button("✅ Simpan & Validasi Data", use_container_width=True, key="btn_validate", type="primary"):
             st.session_state["data_validated"] = False
+            
+            # Clear previous results to ensure fresh start
+            if "result" in st.session_state:
+                del st.session_state["result"]
+            if "academic_result" in st.session_state:
+                del st.session_state["academic_result"]
 
             # Build state
             state = {
@@ -668,15 +665,9 @@ def render_input_data() -> None:
                     "\n".join([f"• {e}" for e in errors])
                 st.error(error_msg)
             else:
-                with st.spinner("⏳ Menjalankan komputasi... harap tunggu"):
-                    try:
-                        result = agents.run_pipeline(state)
-                        st.session_state["result"] = result
-                        st.session_state["data_validated"] = True
-                        st.success(
-                            "✅ Komputasi selesai! Lihat hasil di tab '📊 Hasil & Visualisasi'.")
-                    except Exception as e:
-                        st.error(f"❌ Error saat komputasi: {e}")
+                st.session_state["data_validated"] = True
+                st.success("✅ Data Valid & Tersimpan! Silakan lanjutkan ke tab **'Proses Optimasi'**.")
+
 
     # Row 2: Load progress (in expander for cleaner UI)
     with st.expander("📂 Muat Data Lama"):

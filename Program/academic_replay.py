@@ -271,6 +271,125 @@ def does_route_fit_vehicle_availability(
     return route_start_time >= veh_start and route_end_time <= veh_end
 
 
+def recalculate_route_metrics(route: Dict, dataset: Dict, distance_matrix: List[List[float]]) -> None:
+    """
+    Recalculate route metrics based on the final sequence.
+    Updates in-place:
+    - total_wait_time
+    - total_tw_violations
+    - total_service_time
+    - stops (arrival, departure, wait)
+    - total_time (travel + wait + service)
+    """
+    sequence = route["sequence"]
+    customers = {c["id"]: c for c in dataset["customers"]}
+    depot = dataset["depot"]
+    
+    # Mapping ID -> Index matrix
+    id_to_idx = build_id_to_idx_mapping(dataset)
+    
+    current_time = parse_time_to_minutes(depot["time_window"]["start"])
+    total_dist = 0.0
+    total_wait = 0.0
+    total_violation = 0.0
+    total_service = 0.0
+    
+    stops = []
+    
+    # Depot start
+    stops.append({
+        "node_id": 0,
+        "arrival": current_time,
+        "departure": current_time,
+        "wait": 0,
+        "violation": 0,
+        "type": "depot"
+    })
+    
+    for i in range(len(sequence) - 1):
+        curr_node = sequence[i]
+        next_node = sequence[i+1]
+        
+        # Get distance
+        idx_curr = id_to_idx.get(curr_node, 0)
+        idx_next = id_to_idx.get(next_node, 0)
+        dist = distance_matrix[idx_curr][idx_next]
+        total_dist += dist
+        
+        # Arrival at next node
+        arrival = current_time + dist
+        
+        # Get Time Window & Service info
+        if next_node == 0:
+            # Back to depot
+            tw_start = parse_time_to_minutes(depot["time_window"]["start"])
+            tw_end = parse_time_to_minutes(depot["time_window"]["end"])
+            service = 0
+            node_type = "depot"
+        else:
+            cust = customers[next_node]
+            tw_start = parse_time_to_minutes(cust["time_window"]["start"])
+            tw_end = parse_time_to_minutes(cust["time_window"]["end"])
+            service = cust.get("service_time", 0)
+            node_type = "customer"
+            
+        # WAIT LOGIC
+        if arrival < tw_start:
+            wait = tw_start - arrival
+            start_service = tw_start
+        else:
+            wait = 0
+            start_service = arrival
+            
+        # VIOLATION LOGIC
+        if start_service > tw_end:
+            violation = start_service - tw_end
+        else:
+            violation = 0
+            
+        # Update totals
+        total_wait += wait
+        total_violation += violation
+        total_service += service
+        
+        # Departure
+        departure = start_service + service
+        
+        stops.append({
+            "node_id": next_node,
+            "arrival": round(arrival, 2),
+            "start_service": round(start_service, 2),
+            "departure": round(departure, 2),
+            "wait": round(wait, 2),
+            "violation": round(violation, 2),
+            "tw_start": tw_start,
+            "tw_end": tw_end,
+            "type": node_type
+        })
+        
+        current_time = departure
+
+    # Update Log Details for Violations
+    tw_violations_detail = []
+    for s in stops:
+        if s["violation"] > 0:
+            tw_violations_detail.append({
+                "customer_id": s["node_id"],
+                "arrival": s["arrival"],
+                "tw_end": s["tw_end"],
+                "violation_minutes": s["violation"]
+            })
+
+    # UPDATE ROUTE OBJECT
+    route["stops"] = stops
+    route["total_distance"] = round(total_dist, 2)
+    route["total_wait_time"] = round(total_wait, 2)
+    route["total_tw_violation"] = round(total_violation, 2)
+    route["total_service_time"] = round(total_service, 2)
+    route["total_time"] = round(current_time - parse_time_to_minutes(depot["time_window"]["start"]), 2)
+    route["tw_violations_detail"] = tw_violations_detail
+
+
 def get_available_vehicles(fleet: List[Dict]) -> List[Dict]:
     """
     Filter fleet to only include available vehicles.
@@ -1286,6 +1405,23 @@ def academic_rvnd_inter(
     iteration = 0
     current_distance = sum(r["total_distance"] for r in routes)
 
+    # LOG INITIAL STATE (Iteration 0)
+    current_service_time = sum(
+        compute_service_time_from_sequence(r["sequence"], dataset) for r in routes
+    )
+    iteration_logs.append({
+        "iteration_id": 0,
+        "phase": "RVND-INTER",
+        "mode": "ACADEMIC_REPLAY",
+        "neighborhood": "initial",
+        "improved": False,
+        "routes_snapshot": [r["sequence"] for r in routes],
+        "total_distance": round(current_distance, 2),
+        "total_service_time": current_service_time,
+        "vehicle_usage": {r["vehicle_type"]: 1 for r in routes},
+        "acceptance_criterion": "DISTANCE_ONLY"
+    })
+
     # Log every iteration up to max_iterations
     while iteration < max_iterations:
         iteration += 1
@@ -1346,13 +1482,23 @@ def academic_rvnd_inter(
 
         # Early stopping if NL exhausted
         if not NL:
-            iteration_logs.append({
-                "iteration_id": iteration,
-                "phase": "RVND-INTER",
-                "step": "terminated",
-                "reason": "Neighborhood list exhausted",
-                "final_distance": round(current_distance, 2)
-            })
+            # Fix for User Request: "Filling up to 50 iterations" for consistency
+            remaining_iters = 50 - iteration
+            if remaining_iters > 0:
+                for _ in range(remaining_iters):
+                    iteration += 1
+                    iteration_logs.append({
+                        "iteration_id": iteration,
+                        "phase": "RVND-INTER",
+                        "mode": "ACADEMIC_REPLAY",
+                        "neighborhood": "stagnan",
+                        "improved": False,
+                        "routes_snapshot": [r["sequence"][:] for r in routes],
+                        "total_distance": round(current_distance, 2),
+                        "total_service_time": sum(compute_service_time_from_sequence(r["sequence"], dataset) for r in routes),
+                        "vehicle_usage": {r["vehicle_type"]: 1 for r in routes},
+                        "acceptance_criterion": "DISTANCE_ONLY"
+                    })
             break
 
     return routes, iteration_logs
@@ -1797,6 +1943,22 @@ def academic_rvnd_intra(
     iteration = 0
     cluster_id = route["cluster_id"]
 
+    # LOG INITIAL STATE (Iteration 0)
+    current_service_time = compute_service_time_from_sequence(sequence, dataset)
+    iteration_logs.append({
+        "iteration_id": 0,
+        "phase": "RVND-INTRA",
+        "mode": "ACADEMIC_REPLAY",
+        "cluster_id": cluster_id,
+        "neighborhood": "initial",
+        "improved": False,
+        "routes_snapshot": [sequence[:]],
+        "total_distance": round(current_distance, 2),
+        "total_service_time": current_service_time,
+        "vehicle_usage": {route["vehicle_type"]: 1},
+        "acceptance_criterion": "DISTANCE_ONLY"
+    })
+
     # Log every iteration up to max_iterations
     while iteration < max_iterations:
         iteration += 1
@@ -1841,6 +2003,24 @@ def academic_rvnd_intra(
 
         # Early stopping if NL exhausted
         if not NL:
+            # Fix for User Request: "Filling up to 50 iterations" for visualization
+            remaining_iters = 50 - iteration
+            if remaining_iters > 0:
+                for _ in range(remaining_iters):
+                    iteration += 1
+                    iteration_logs.append({
+                        "iteration_id": iteration,
+                        "phase": "RVND-INTRA",
+                        "mode": "ACADEMIC_REPLAY",
+                        "cluster_id": cluster_id,
+                        "neighborhood": "stagnan",
+                        "improved": False,
+                        "routes_snapshot": [sequence[:]],
+                        "total_distance": round(current_distance, 2),
+                        "total_service_time": current_service_time,
+                        "vehicle_usage": {route["vehicle_type"]: 1},
+                        "acceptance_criterion": "DISTANCE_ONLY"
+                    })
             break
 
     # Update route with final sequence and recalculated metrics
@@ -2040,14 +2220,22 @@ def reassign_vehicles(
                 "status": "✅ Assigned"
             })
         else:
-            # No vehicle available - keep old or mark as error
+            # Analyze WHY it failed for better error message
+            any_units_free = any(available_units.get(f["id"], 0) > 0 for f in fleet_sorted)
+            if any_units_free:
+                # Units exist but were rejected (likely capacity)
+                free_fleets = [f["id"] for f in fleet_sorted if available_units.get(f["id"], 0) > 0]
+                fail_reason = f"Unit tersedia ({', '.join(free_fleets)}) tapi kapasitas tidak cukup (Butuh {demand})"
+            else:
+                fail_reason = "Semua unit armada habis terpakai (Stok 0)"
+
             iteration_logs.append({
                 "phase": "VEHICLE_REASSIGN",
                 "cluster_id": route["cluster_id"],
                 "demand": demand,
                 "old_vehicle": old_vehicle,
                 "new_vehicle": None,
-                "reason": "No feasible vehicle: all units busy or insufficient capacity/time",
+                "reason": fail_reason,
                 "status": "❌ No Vehicle"
             })
 
@@ -2564,6 +2752,11 @@ def run_academic_replay(
     print("\n[5/5] Reassigning fleets...")
     final_routes, vehicle_logs = reassign_vehicles(final_routes, dataset)
     all_logs.extend(vehicle_logs)
+
+    # [NEW] Recalculate metrics for accurate time/wait reporting
+    print("   Recalculating final route metrics...")
+    for route in final_routes:
+        recalculate_route_metrics(route, dataset, distance_matrix)
 
     # COST CALCULATION
     costs = compute_costs(final_routes, dataset)

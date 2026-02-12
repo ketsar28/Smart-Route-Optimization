@@ -107,15 +107,18 @@ def _display_nn_iterations(logs: List[Dict]) -> None:
 
         for cluster_id in sorted(clusters):
             with st.expander(f"Cluster {cluster_id}", expanded=True):
+                cluster_logs = [
+                    l for l in nn_logs if l["cluster_id"] == cluster_id]
+                
+                # Calculate total distance for this cluster
+                total_dist = sum(l.get("distance", 0) for l in cluster_logs)
+
                 # DISPLAY SUMMARY
                 summary = next((l for l in logs if l.get(
                     "phase") == "NN_SUMMARY" and l.get("cluster_id") == cluster_id), None)
                 if summary:
                     st.success(
-                        f"**Rute Terbentuk:** {summary['route_sequence']} menggunakan armada **{summary['vehicle_type']}**", icon="🚚")
-
-                cluster_logs = [
-                    l for l in nn_logs if l["cluster_id"] == cluster_id]
+                        f"**Rute Terbentuk:** {summary['route_sequence']} menggunakan armada **{summary['vehicle_type']}** | **Total Jarak:** {total_dist:.2f} km", icon="🚚")
 
                 # Build table with TIME WINDOW data
                 rows = []
@@ -225,7 +228,7 @@ def _display_acs_iterations(logs: List[Dict]) -> None:
             with st.expander("ℹ️ Keterangan Rumus & Inisialisasi"):
                 st.markdown("**Inisialisasi Pheromone:**")
                 st.latex(
-                    r"\tau_0 = \frac{1}{n \cdot Z_{nn}} = " + f"{init['tau0']:.6f}")
+                    r"\tau_0 = \frac{1}{n \cdot Z_{nn}}")
                 st.markdown("""
                 **Keterangan:**
                 *   $n$: Jumlah customer
@@ -450,6 +453,17 @@ def _display_rvnd_inter_iterations(logs: List[Dict]) -> None:
         nh_text = " | ".join([f"**{k.replace('_', ' ').title()}**: {v}x" for k,
                              v in sorted(neighborhood_counts.items(), key=lambda x: -x[1])])
         st.caption(f"📊 Penggunaan Jenis Gerakan (Neighborhood): {nh_text}")
+        
+        with st.expander("ℹ️ Apa itu Swap, Shift, Cross di Inter-RVND?"):
+            st.markdown("""
+            Ini adalah jenis pergerakan **Antar Rute** (memindahkan pelanggan dari Rute A ke Rute B):
+            - **Swap 1 1**: Tukar 1 pelanggan Rute A dengan 1 pelanggan Rute B (1-Lawan-1).
+            - **Swap 1 0 (Shift)**: Pindahkan 1 pelanggan dari Rute A ke Rute B tanpa balasan.
+            - **Swap 2 1**: Tukar 2 pelanggan Rute A dengan 1 pelanggan Rute B.
+            - **Swap 2 2**: Tukar 2 pelanggan Rute A dengan 2 pelanggan Rute B (2-Lawan-2).
+            - **Cross**: Potong dan silang sambung dua rute (Cross exchange).
+            - **Initial**: Kondisi awal sebelum dilakukan pergerakan apapun (basis pembanding).
+            """)
 
     st.divider()
 
@@ -482,11 +496,7 @@ def _display_rvnd_inter_iterations(logs: List[Dict]) -> None:
         routes_display = []
         for i, route in enumerate(routes_snapshot):
             route_str = format_route(route)
-            # Batasi panjang per rute
-            if len(route_str) > 20:
-                nodes = route if isinstance(route, list) else []
-                if len(nodes) > 5:
-                    route_str = f"0→...({len(nodes)-2} node)...→0"
+            # Remove truncation logic to show full route
             routes_display.append(f"R{i+1}:{route_str}")
         routes_str = " | ".join(routes_display)
 
@@ -520,7 +530,14 @@ def _display_rvnd_inter_iterations(logs: List[Dict]) -> None:
         prev_distance = total_dist
 
     df = pd.DataFrame(table_data)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(
+        df, 
+        use_container_width=True, 
+        hide_index=True,
+        column_config={
+            "Rute Hasil": st.column_config.TextColumn("Rute Hasil", width="medium"),
+        }
+    )
 
 
 def _display_rvnd_intra_iterations(logs: List[Dict]) -> None:
@@ -541,7 +558,7 @@ def _display_rvnd_intra_iterations(logs: List[Dict]) -> None:
     neighborhood_counts = {}
     for log in intra_logs:
         nh = log.get("neighborhood", "none")
-        if nh and nh != "none":
+        if nh and nh not in ["none", "initial", "stagnan"]:
             neighborhood_counts[nh] = neighborhood_counts.get(nh, 0) + 1
 
     col1, col2 = st.columns(2)
@@ -586,10 +603,10 @@ def _display_rvnd_intra_iterations(logs: List[Dict]) -> None:
         last_dist = distances[-1] if distances else 0
         delta_pct = ((last_dist - first_dist) / first_dist *
                      100) if first_dist > 0 else 0
-        vehicle_type = cluster_logs[0].get(
-            "vehicle_type", "?") if cluster_logs else "?"
-
-        with st.expander(f"🚛 Cluster {cluster_id} ({vehicle_type}) - {len(cluster_logs)} iterasi, {cluster_improved} perbaikan", expanded=False):
+        vehicle_type = cluster_logs[0].get("vehicle_type", "N/A") if cluster_logs else "N/A"
+        
+        v_label = f"({vehicle_type})" if vehicle_type not in ["?", "N/A"] else ""
+        with st.expander(f"🚛 Cluster {cluster_id} {v_label} - {len(cluster_logs)} iterasi, {cluster_improved} perbaikan", expanded=False):
             # Cluster summary
             c1, c2, c3 = st.columns(3)
             with c1:
@@ -629,16 +646,24 @@ def _display_rvnd_intra_iterations(logs: List[Dict]) -> None:
                     delta_str = "-"
 
                 # Format neighborhood
-                nh_display = neighborhood.replace(
-                    "_", "-").title() if neighborhood and neighborhood != "none" else "(Cek Optimasi)"
+                if neighborhood == "initial":
+                    nh_display = "🏁 Posisi Awal"
+                elif neighborhood == "or_opt":
+                    nh_display = "🔀 Or-Opt (Pindah)"
+                elif neighborhood == "two_opt":
+                    nh_display = "🔄 2-Opt (Tukar)"
+                elif neighborhood == "stagnan":
+                    nh_display = "⏸️ Stagnan"
+                else:
+                    nh_display = neighborhood.replace("_", "-").title() if neighborhood and neighborhood != "none" else "🔍 Mencari Peluang"
 
                 table_data.append({
                     "Iter": iter_id,
                     "Move": nh_display,
-                    "Rute Sebelum": before_route if before_route != current_route else "(Tetap)",
+                    "Rute Sebelum": before_route if before_route != current_route and neighborhood != "initial" else "-", 
                     "Rute Sesudah": current_route,
                     "Jarak": f"{total_dist:.2f} km",
-                    "Δ": delta_str,
+                    "Δ (Selisih)": delta_str,
                     "Status": "✅ Berhasil" if improved else "➖ Tetap"
                 })
 
@@ -646,7 +671,15 @@ def _display_rvnd_intra_iterations(logs: List[Dict]) -> None:
                 prev_distance = total_dist
 
             df = pd.DataFrame(table_data)
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.dataframe(
+                df, 
+                use_container_width=True, 
+                hide_index=True,
+                column_config={
+                    "Rute Sebelum": st.column_config.TextColumn("Rute Sebelum", width="medium"),
+                    "Rute Sesudah": st.column_config.TextColumn("Rute Sesudah", width="medium"),
+                }
+            )
 
             st.caption("""
             **Keterangan Kolom:**
@@ -962,6 +995,7 @@ def _display_vehicle_assignment(result: Dict[str, Any]) -> None:
     if reassignment_log:
         df = pd.DataFrame(reassignment_log)
         st.dataframe(df, use_container_width=True, hide_index=True)
+        st.caption("ℹ️ **Catatan:** Jika *Armada Baru* bernilai `None`, berarti **Stok Armada Habis** atau tidak ada kendaraan yang memiliki *sisa kapasitas* cukup untuk rute tersebut.")
 
 
 def _display_time_window_analysis(result: Dict[str, Any]) -> None:
@@ -1008,7 +1042,7 @@ def _display_time_window_analysis(result: Dict[str, Any]) -> None:
 
 
 def _display_final_results(result: Dict[str, Any]) -> None:
-    """Display final routes table."""
+    """Display final routes table with ACTUAL assigned vehicles and VALID costs."""
     st.markdown("### 🏁 Hasil Akhir (Final Routes)")
 
     routes = result.get("routes", [])
@@ -1016,13 +1050,68 @@ def _display_final_results(result: Dict[str, Any]) -> None:
         st.warning("Tidak ada rute yang terbentuk.")
         return
 
-    data = []
+    # --- 1. PARSE REASSIGNMENT LOGS ---
+    reassignment_map = {} 
+    explicit_logs = [l for l in result.get("iteration_logs", []) if l.get("phase") == "VEHICLE_REASSIGN"]
+    
+    failed_clusters = []
+    
+    for log in explicit_logs:
+        c_id = log.get("cluster_id")
+        if c_id is not None:
+             reassignment_map[c_id] = {
+                 "status": log.get("status", ""),
+                 "new_vehicle": log.get("new_vehicle", "-"),
+                 "reason": log.get("reason", "")
+             }
+             if "No Vehicle" in log.get("status", ""):
+                 failed_clusters.append({
+                     "id": c_id,
+                     "reason": log.get("reason", ""),
+                     "needed": log.get("old_vehicle", "Unknown")
+                 })
 
-    # Get fleet data for capacity lookup
+    # --- 2. RECOMMENDATIONS (If Failures Exist) ---
+    if failed_clusters:
+        st.error(f"⚠️ **Peringatan: Ada {len(failed_clusters)} Cluster Gagal Dilayani!**")
+        
+        with st.expander("💡 Rekomendasi Perbaikan (Klik untuk melihat)", expanded=True):
+            for fail in failed_clusters:
+                st.markdown(f"""
+                - **Cluster {fail['id']}**: Gagal karena kehabisan armada (Target awal: **{fail['needed']}**).
+                  - 🔧 **Saran**: Tambahkan unit **{fail['needed']}** di tab *Input Data*, atau kurangi muatan pelanggan di area tersebut.
+                """)
+
+    data = []
     dataset = result.get("dataset", {})
     fleet_dict = {f["id"]: f for f in dataset.get("fleet", [])}
+    costs = result.get("costs", {})
+    cost_breakdown = {c["cluster_id"]: c for c in costs.get("breakdown", [])}
 
+    # Tracking Valid Totals
+    valid_total_dist = 0
+    valid_total_cost = 0
+    
     for r in routes:
+        cluster_id = r["cluster_id"]
+        original_vehicle = r["vehicle_type"]
+        
+        # Determine ACTUAL vehicle
+        display_vehicle = original_vehicle
+        status_msg = "✅ Valid"
+        is_failed = False
+        
+        if cluster_id in reassignment_map:
+            re_info = reassignment_map[cluster_id]
+            re_status = re_info["status"]
+            
+            if "No Vehicle" in re_status or "Gagal" in re_status:
+                display_vehicle = "❌ GAGAL (Stok Habis)"
+                status_msg = "❌ Invalid"
+                is_failed = True
+            elif "Assigned" in re_status:
+                display_vehicle = re_info["new_vehicle"]
+
         # Calculate Duration
         travel_time = r.get('total_travel_time', 0)
         service_time = r['total_service_time']
@@ -1030,116 +1119,85 @@ def _display_final_results(result: Dict[str, Any]) -> None:
         total_duration = travel_time + service_time + wait_time
 
         # Calculate Utilization
-        vehicle_type = r["vehicle_type"]
         capacity = 0
-        if vehicle_type in fleet_dict:
-            capacity = fleet_dict[vehicle_type]["capacity"]
-        elif f"Vehicle {vehicle_type}" in fleet_dict:  # fallback
-            capacity = fleet_dict[f"Vehicle {vehicle_type}"]["capacity"]
+        if not is_failed:
+             if display_vehicle in fleet_dict:
+                 capacity = fleet_dict[display_vehicle]["capacity"]
+             elif f"Vehicle {display_vehicle}" in fleet_dict:
+                 capacity = fleet_dict[f"Vehicle {display_vehicle}"]["capacity"]
+             elif original_vehicle in fleet_dict:
+                 capacity = fleet_dict[original_vehicle]["capacity"]
 
         utilization = 0
         if capacity > 0:
             utilization = (r["total_demand"] / capacity) * 100
 
+        # Cost Logic (Show 0 if failed)
+        row_cost = 0
+        if cluster_id in cost_breakdown and not is_failed:
+            row_cost = cost_breakdown[cluster_id]["total_cost"]
+            valid_total_cost += row_cost
+            valid_total_dist += r['total_distance']
+        
         utilization_str = f"{utilization:.1f}%"
         if utilization > 100:
             utilization_str += " ⚠️"
+        elif is_failed:
+            utilization_str = "-"
 
         data.append({
-            "Cluster": r["cluster_id"],
-            "Armada": r["vehicle_type"],
+            "Cluster": cluster_id,
+            "Armada Final": display_vehicle,
             "Rute": str(r["sequence"]),
-            "Jarak (km)": f"{r['total_distance']:.2f}",
-            "Durasi (menit)": f"{total_duration:.0f}",
+            "Jarak (km)": f"{r['total_distance']:.2f}" if not is_failed else "(0)",
+            "Durasi (menit)": f"{total_duration:.0f}" if not is_failed else "(0)",
             "Utilisasi (%)": utilization_str,
-            "Pelanggaran TW (menit)": f"{r.get('total_tw_violation', 0):.0f}",
-            "Waktu Tunggu (menit)": f"{wait_time:.1f}",
-            "Muatan (kg)": r["total_demand"]
+            "Est. Biaya": f"Rp {row_cost:,.0f}" if not is_failed else "Rp 0 (Gagal)",
+            "Status": status_msg
         })
 
     df = pd.DataFrame(data)
     st.dataframe(df, use_container_width=True, hide_index=True)
 
-    # Cost
-    costs = result.get("costs", {})
+    # Cost Summary (Valid Only)
     st.success(
-        f"💰 **Total Biaya Transportasi:** Rp {costs.get('total_cost', 0):,.0f}")
+        f"💰 **Total Biaya Transportasi (Valid):** Rp {valid_total_cost:,.0f}")
+    if valid_total_cost < costs.get('total_cost', 0):
+        st.caption(f"*(Total awal Rp {costs.get('total_cost', 0):,.0f} dikurangi rute gagal)*")
 
     # TIME WINDOW ANALYSIS (NEW)
     st.markdown("---")
     _display_time_window_analysis(result)
 
-    # Costs
+    # Costs Details
     st.markdown("---")
     if costs:
-        st.markdown("#### Rincian Biaya:")
+        st.markdown("#### Rincian Biaya (Valid Routes Only)")
 
-        breakdown = costs.get("breakdown", [])
-        if breakdown:
-            df = pd.DataFrame([{
-                "Cluster": c["cluster_id"],
+        clean_breakdown = []
+        for c in costs.get("breakdown", []):
+            # Check if this cluster failed
+            c_id = c["cluster_id"]
+            if c_id in reassignment_map and ("Gagal" in reassignment_map[c_id]["status"] or "No Vehicle" in reassignment_map[c_id]["status"]):
+                continue # Skip failed routes in cost table
+            
+            clean_breakdown.append({
+                "Cluster": c_id,
                 "Armada": c["vehicle_type"],
                 "Biaya Tetap": f"Rp {c['fixed_cost']:,.0f}",
                 "Biaya Variabel": f"Rp {c['variable_cost']:,.0f}",
                 "Total Biaya": f"Rp {c['total_cost']:,.0f}"
-            } for c in breakdown])
+            })
+            
+        if clean_breakdown:
+            df = pd.DataFrame(clean_breakdown)
             st.dataframe(df, use_container_width=True, hide_index=True)
+        else:
+            st.info("Tidak ada rute valid untuk dihitung biayanya.")
 
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Total Biaya Tetap",
-                      f"Rp {costs.get('total_fixed_cost', 0):,.0f}")
-        with col2:
-            st.metric("Total Biaya Variabel",
-                      f"Rp {costs.get('total_variable_cost', 0):,.0f}")
-        with col3:
-            st.metric("TOTAL BIAYA", f"Rp {costs.get('total_cost', 0):,.0f}")
-
-
-def _display_validation(result: Dict[str, Any]) -> None:
-    """Display validation of dynamic constraints."""
-    st.markdown("### ✅ Validasi Kendala Rute (Dinamis)")
-    st.markdown(
-        "*Memastikan rute mematuhi aturan MFVRP (Struktur, Unik, Kapasitas)*")
-
-    validation = result.get("validation", [])
-    all_valid = result.get("all_valid", False)
-
-    if all_valid:
-        st.success("🎉 SEMUA RUTE VALID SECARA MATEMATIS!")
-    else:
-        st.error("⚠️ BEBERAPA RUTE TIDAK VALID - LIHAT DETAIL DI BAWAH")
-
-    if validation:
-        # Dynamic validation table
-        df = pd.DataFrame([{
-            "Cluster": v["cluster_id"],
-            "Rute Aktual": str(v["sequence"]),
-            "Valid": "✅" if v["valid"] else "❌",
-            "Isu / Masalah": ", ".join(v["issues"]) if v["issues"] else "-"
-        } for v in validation])
-        st.dataframe(df, use_container_width=True, hide_index=True)
-
-    # Route Structure Validation
-    st.markdown("### 🏗️ Validasi Struktur Rute")
-
-    structure_validation = result.get("structure_validation", [])
-    structure_valid = result.get("structure_valid", True)
-
-    if structure_valid:
-        st.success(
-            "✅ Semua rute memiliki struktur MFVRP yang benar [DEPOT → Pelanggan → DEPOT]")
-    else:
-        st.error("❌ KRITIS: Beberapa rute memiliki struktur yang tidak valid!")
-
-    if structure_validation:
-        df_struct = pd.DataFrame([{
-            "Cluster": v["cluster_id"],
-            "Sequence": str(v["sequence"]),
-            "Valid": "✅" if v["valid"] else "❌",
-            "Issues": ", ".join(v["issues"]) if v["issues"] else "None"
-        } for v in structure_validation])
-        st.dataframe(df_struct, use_container_width=True, hide_index=True)
+    # Validation sections removed as requested by user to reduce visual noise
+    # Route Structure Validation (REMOVED)
+    pass
 
 
 def render_academic_replay() -> None:
