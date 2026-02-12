@@ -16,7 +16,7 @@ if str(_gui_dir) not in sys.path:
 try:
     from utils import save_to_autosave
 except ImportError:
-    # If utils not found, define dummy
+    # Kalau utils nggak ketemu buat dummy aja biar nggak error
     def save_to_autosave(): pass
 
 
@@ -30,7 +30,7 @@ def _update_vehicle_field(idx: int, field: str, value) -> None:
 
 
 def _get_next_vehicle_letter() -> str:
-    """Get the next available vehicle letter (A, B, C, D, ...)."""
+    """Cari huruf selanjutnya buat ID armada (A, B, C...)"""
     user_vehicles = st.session_state.get("user_vehicles", [])
 
     # Get all used letters
@@ -62,7 +62,7 @@ def _get_default_capacity_for_letter(letter: str) -> int:
 
 
 def render_input_data() -> None:
-    """Render Input Data tab with structured sections for vehicle capacity, iterations, demands, and distance matrix."""
+    """Render tab Input Data. Di sini kita set kapasitas, iterasi, demand, dll."""
 
     # st.header("📋 Input Data") # Removed redundant header
 
@@ -194,7 +194,7 @@ def render_input_data() -> None:
                     save_to_autosave()
         else:
             st.info(
-                "ℹ️ Belum ada kendaraan. Klik tombol di bawah untuk menambahkan kendaraan pertama.")
+                "ℹ️ Klik tombol di bawah kalau mau nambah armada kendaraan.")
 
         if st.button("➕ Tambah Kendaraan Baru", key="btn_add_vehicle", type="primary"):
             next_letter = _get_next_vehicle_letter()
@@ -226,7 +226,7 @@ def render_input_data() -> None:
                     f"**{v['name']}**: {v['units']} unit ({v['available_from']}–{v['available_until']})"
                     for v in active_vehicles
                 ])
-                st.success(f"✅ Kendaraan aktif: {active_summary}")
+                st.success(f"✅ Armada aktif: {active_summary}")
 
             if inactive_vehicles:
                 inactive_names = ", ".join(
@@ -235,10 +235,10 @@ def render_input_data() -> None:
 
             if not active_vehicles:
                 st.error(
-                    "⚠️ Tidak ada kendaraan aktif! Aktifkan minimal 1 kendaraan untuk menjalankan algoritma.")
+                    "⚠️ Belum ada armada yang aktif. Minimal aktifin 1 ya biar bisa running.")
         else:
             st.error(
-                "❌ **Tidak ada kendaraan!** Algoritma tidak dapat berjalan. Klik 'Tambah Kendaraan Baru' untuk menambahkan.")
+                "❌ **Kosong!** Nggak bisa jalan tanpa armada. Tambah baru dulu di bawah.")
 
     st.divider()
 
@@ -337,7 +337,7 @@ def render_input_data() -> None:
     st.subheader("📦 Permintaan Pelanggan")
 
     if "points" not in st.session_state or not st.session_state.points.get("customers"):
-        st.info("ℹ️ Tambahkan customer di tab 'Input Titik' terlebih dahulu.")
+        st.info("ℹ️ Isi dulu daftar pelanggan di tab 'Input Titik' ya.")
     else:
         customers = st.session_state.points["customers"]
         n = len(customers)
@@ -467,7 +467,7 @@ def render_input_data() -> None:
     size = len(nodes)
 
     if size == 0:
-        st.info("ℹ️ Tambahkan depot dan customer di tab 'Input Titik' terlebih dahulu.")
+        st.info("ℹ️ Set dulu depot & pelanggan di tab 'Input Titik' biar matriksnya muncul.")
     else:
         # st.write("**Masukkan jarak antar titik secara manual.**")
         # st.write(
@@ -666,7 +666,7 @@ def render_input_data() -> None:
                 st.error(error_msg)
             else:
                 st.session_state["data_validated"] = True
-                st.success("✅ Data Valid & Tersimpan! Silakan lanjutkan ke tab **'Proses Optimasi'**.")
+                st.success("✅ Data beres & sudah tervalidasi! Bisa lanjut ke tab **'Proses Optimasi'** sekarang.")
 
 
     # Row 2: Load progress (in expander for cleaner UI)
@@ -708,7 +708,7 @@ def render_input_data() -> None:
                         del st.session_state[k]
 
                     st.success(
-                        "✅ Progres dimuat! Silakan refresh halaman untuk melihat data.")
+                        "✅ Progres lama berhasil dimuat! Refresh halaman dulu ya biar datanya muncul.")
                     save_to_autosave()
                     st.rerun()
                 except Exception as e:

@@ -19,14 +19,14 @@ except ImportError:
 
 
 def _get_next_depot_id(depots: list) -> int:
-    """Get the next available depot ID based on max existing ID."""
+    """Cek ID depot selanjutnya biar nggak bentrok."""
     if not depots:
         return 0
     return max(int(d.get("id", 0)) for d in depots) + 1
 
 
 def _get_next_customer_id(customers: list) -> int:
-    """Get the next available customer ID based on max existing ID."""
+    """Cek ID pelanggan selanjutnya."""
     if not customers:
         return 1
     return max(int(c.get("id", 1)) for c in customers) + 1
@@ -39,7 +39,7 @@ def render_input_titik(show_labels: bool = True, show_grid: bool = True) -> None
             if c.get("name", "").startswith("Customer "):
                 c["name"] = c["name"].replace("Customer ", "Pelanggan ")
 
-    # Initialize session state
+    # Inisialisasi session state kalau belum ada
     if "points" not in st.session_state:
         st.session_state["points"] = {"depots": [], "customers": []}
 
@@ -68,8 +68,8 @@ def render_input_titik(show_labels: bool = True, show_grid: bool = True) -> None
         # show_labels = st.toggle("Tampilkan Label", value=True)
         # show_grid = st.toggle("Tampilkan Grid", value=True)
 
-    # Canvas with Plotly
-    st.subheader("🗺️ Peta Interaktif")
+    # Peta buat liat sebaran titik
+    st.subheader("🗺️ Peta Titik")
 
     st.write("**Mode:**")
     point_type = st.radio(
@@ -138,7 +138,7 @@ def render_input_titik(show_labels: bool = True, show_grid: bool = True) -> None
     # Display canvas with click detection
     st.plotly_chart(fig, use_container_width=True, key="canvas_plot")
 
-    # Manual input section in Expander for cleanliness
+    # Masukin koordinat manual kalau males ngeklik di peta
     with st.expander("➕ Input Koordinat Manual"):
         # Layout: X, Y, and Add Button side-by-side
         c1, c2, c3 = st.columns([1, 1, 1], vertical_alignment="bottom")
@@ -261,7 +261,7 @@ def render_input_titik(show_labels: bool = True, show_grid: bool = True) -> None
                 st.rerun()
         else:
             st.info(
-                "ℹ️ Belum ada depot. Tambahkan via Canvas atau form Input Koordinat.")
+                "ℹ️ Belum ada depot. Tambahin manual atau klik di peta ya.")
 
     # ------------------ CUSTOMER EDITOR ------------------
     with tab_customers:
@@ -333,7 +333,7 @@ def render_input_titik(show_labels: bool = True, show_grid: bool = True) -> None
                 st.rerun()
         else:
             st.info(
-                "ℹ️ Belum ada customer. Tambahkan via Canvas atau form Input Koordinat.")
+                "ℹ️ Belum ada pelanggan. Tambahin manual atau klik di peta ya.")
 
         st.session_state["points"] = points
 

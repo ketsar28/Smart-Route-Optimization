@@ -1,11 +1,10 @@
 """
-Academic Replay Results Tab
+Tab Hasil Replay Akademik
 
-Displays all iterations from the Word document validation:
-- ACS iterations (per cluster)
-- RVND inter-route iterations
-- RVND intra-route iterations
-- Final validation results
+Di sini saya nampilin semua iterasi proses perhitungan:
+- Iterasi ACS (per cluster)
+- Iterasi RVND inter-route & intra-route
+- Hasil final validasinya
 """
 
 from __future__ import annotations
@@ -14,7 +13,6 @@ import json
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from pathlib import Path
 from typing import Dict, Any, List
 
@@ -29,7 +27,7 @@ def _format_number(value: float) -> str:
 
 
 def _load_academic_results() -> Dict[str, Any]:
-    """Load academic replay results if available."""
+    """Load hasil rekapan kalau file-nya ada."""
     if ACADEMIC_OUTPUT_PATH.exists():
         with ACADEMIC_OUTPUT_PATH.open("r", encoding="utf-8") as f:
             return json.load(f)
@@ -45,7 +43,7 @@ def _display_sweep_iterations(logs: List[Dict]) -> None:
         "phase") == "SWEEP" and l.get("step") == "polar_angle"]
     if angle_logs:
         st.markdown("**Langkah 1: Perhitungan Sudut Polar**")
-        st.info("Penghitungan sudut polar dilakukan untuk menentukan posisi relatif pelanggan terhadap depot.")
+        st.info("Sudut polar saya pake buat nentuin posisi relatif pelanggan terhadap depot.")
         st.latex(
             r"\theta = \arctan\left(\frac{y_i - y_{\text{depot}}}{x_i - x_{\text{depot}}}\right) \cdot \frac{180}{\pi}")
 
@@ -84,9 +82,7 @@ def _display_nn_iterations(logs: List[Dict]) -> None:
     st.markdown("""
     <div style="background-color: #f8f9fa; padding: 18px; border-radius: 12px; border-left: 6px solid #4a90e2; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
         <strong style="color: #2c3e50; font-size: 1.1em;">⏱️ Konsep Perhitungan Waktu (Time Window)</strong><br>
-        <p style="color: #5d6d7e; margin-top: 8px;">
-            Setiap rute dibangun dengan memilih pelanggan terdekat yang memenuhi batasan waktu operasional pelanggan (Time Window).
-        </p>
+            Rute saya bangun dengan nyari pelanggan terdekat yang masih masuk di jam operasional mereka (Time Window).
         <hr style="margin: 12px 0; border: 0; border-top: 1px solid #dee2e6;">
         <p style="font-family: 'Inter', sans-serif; font-weight: 600; color: #34495e; font-size: 1.05em; text-align: center;">
             Waktu Tiba = Waktu Berangkat + Waktu Perjalanan
@@ -224,7 +220,6 @@ def _display_acs_iterations(logs: List[Dict]) -> None:
         init_logs = [l for l in cluster_logs if l.get(
             "step") == "init_pheromone"]
         if init_logs:
-            init = init_logs[0]
             with st.expander("ℹ️ Keterangan Rumus & Inisialisasi"):
                 st.markdown("**Inisialisasi Pheromone:**")
                 st.latex(
@@ -375,15 +370,13 @@ def _display_acs_iterations(logs: List[Dict]) -> None:
                     st.dataframe(df, use_container_width=True, hide_index=True)
 
                 # Iteration summary (handle both old and new formats)
-                summary_logs = [l for l in iter_logs if l.get(
-                    "step") == "iteration_summary"]
+                summary_logs = [l for l in iter_logs if l.get("step") == "iteration_summary"]
                 if summary_logs:
                     s = summary_logs[0]
                     best_route = s.get('best_route', [])
                     best_distance = s.get('best_distance', 0)
                     best_objective = s.get('best_objective', "-")
                     tw_viol = s.get('best_tw_violation', 0)
-                    acceptance = s.get('acceptance_criterion', "DISTANCE")
 
                     # Modern display with styling
                     with st.container():
@@ -414,7 +407,7 @@ def _display_rvnd_inter_iterations(logs: List[Dict]) -> None:
     inter_logs = [l for l in logs if l.get("phase") == "RVND-INTER"]
 
     if not inter_logs:
-        st.info("Tidak ada iterasi inter-route (rute tunggal atau tidak ada move).")
+        st.info("Nggak ada iterasi inter-route (mungkin cuma 1 rute atau emang nggak ada move yang lebih baik).")
         return
 
     # === SUMMARY CARDS ===
@@ -485,7 +478,7 @@ def _display_rvnd_inter_iterations(logs: List[Dict]) -> None:
         total_dist = l.get("total_distance", 0)
         routes_snapshot = l.get("routes_snapshot", [])
 
-        # Calculate delta from previous
+        # Itung delta dari iterasi sebelumnya
         if prev_distance is not None:
             delta = total_dist - prev_distance
             delta_str = f"{delta:+.2f}" if delta != 0 else "0.00"
@@ -547,7 +540,7 @@ def _display_rvnd_intra_iterations(logs: List[Dict]) -> None:
     intra_logs = [log for log in logs if log.get("phase") == "RVND-INTRA"]
 
     if not intra_logs:
-        st.info("Tidak ada iterasi intra-route.")
+        st.info("Belum ada iterasi intra-route nih.")
         return
 
     # === OVERALL SUMMARY ===
@@ -901,7 +894,6 @@ def _display_vehicle_availability(result: Dict[str, Any]) -> None:
     st.markdown("*Waktu Ketersediaan Jenis Fleet pada Hari Itu*")
 
     availability = result.get("vehicle_availability", [])
-    available_vehicles = result.get("available_vehicles", [])
 
     if not availability:
         # Fallback: extract from logs
@@ -1017,7 +1009,7 @@ def _display_time_window_analysis(result: Dict[str, Any]) -> None:
         st.metric("Total Waktu Tunggu (Menit)", f"{total_wait:.1f}")
 
     if total_viol > 0:
-        st.info("ℹ️ Catatan: Dalam algoritma ACS/RVND, Time Window adalah *Soft Constraint* (boleh dilanggar dengan penalti), berbeda dengan NN yang *Hard Constraint* (tolak mutlak).")
+        st.info("ℹ️ Catatan buat saya: Di ACS/RVND, Time Window itu 'Soft Constraint' (boleh dilanggar tapi kena penalti), beda sama NN yang 'Hard Constraint'.")
 
     # 2. Per Route Detail
     st.markdown("#### Detail Pelanggaran per Rute")
@@ -1201,7 +1193,7 @@ def _display_final_results(result: Dict[str, Any]) -> None:
 
 
 def render_academic_replay() -> None:
-    """Main render function for Proses Optimasi tab (formerly Academic Replay)."""
+    """Fungsi utama buat nampilin tab Proses Optimasi."""
 
     # ============================================================
     # SECTION 1: Compact Vehicle Summary Card
@@ -1362,7 +1354,7 @@ def render_academic_replay() -> None:
 
     if not result:
         st.info(
-            "💡 Belum ada hasil optimasi. Klik tombol **Jalankan Optimasi** di atas untuk memulai.")
+            "💡 Belum ada hasil. Klik tombol **Jalankan Optimasi** di atas ya.")
         return
     
     # Ensure global state is synced if we have a result

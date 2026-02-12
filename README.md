@@ -1,63 +1,96 @@
 # Smart Route Optimization System (Decision Support System)
 
-Dalam era modern di mana efisiensi adalah kunci keberhasilan operasional, manajemen logistik seringkali dihadapkan pada tantangan yang kompleks. Biaya operasional yang tinggi, keterbatasan armada, dan tuntutan waktu pengiriman yang ketat menjadi masalah yang harus diselesaikan setiap hari.
+Project ini saya kerjakan untuk menjawab tantangan manajemen logistik yang makin kompleks saat ini. Efisiensi adalah kunci, tapi kenyataannya di lapangan seringkali kita bertemu masalah biaya operasional yang membengkak, armada yang terbatas, dan jadwal pengiriman yang sangat ketat.
 
-Proyek ini hadir sebagai **Sistem Pendukung Keputusan (Decision Support System)** yang dirancang untuk menjawab tantangan tersebut. Dengan memanfaatkan pendekatan algoritma hibrida yang cerdas, sistem ini mampu mengubah perencanaan rute yang rumit dan memakan waktu menjadi proses yang otomatis, terukur, dan optimal.
+Saya mengembangkan sistem ini sebagai **Sistem Pendukung Keputusan (Decision Support System)** yang cerdas. Dengan algoritma hibrida yang saya bangun, perencanaan rute yang tadinya manual dan membingungkan bisa berubah jadi otomatis, lebih hemat, dan pastinya optimal.
 
-## Latar Belakang & Permasalahan
+## Kenapa Proyek Ini Penting?
 
-Praktik perencanaan rute manual seringkali menghasilkan solusi yang jauh dari kata efisien. Tanpa bantuan komputasi, manusia sulit untuk mempertimbangkan puluhan variabel secara bersamaan, seperti kemacetan, kapasitas muatan kendaraan yang berbeda-beda, dan jendela waktu (time windows) yang spesifik untuk setiap lokasi.
+Waktu saya riset, perencanaan rute manual itu penuh celah. Manusia punya keterbatasan buat ngitung puluhan variabel sekaligus—mulai dari kemacetan, kapasitas muatan tiap armada (yang beda-beda jenisnya), sampai jendela waktu (_time windows_) tiap lokasi.
 
-Dampak dari inefisiensi ini sangat nyata:
+Dampak negatif yang coba saya selesaikan di sini:
 
-1.  **Pemborosan Biaya**: Rute yang tidak optimal berarti jarak tempuh yang lebih jauh, konsumsi bahan bakar yang lebih tinggi, dan biaya perawatan kendaraan yang meningkat.
-2.  **Keterlambatan Layanan**: Kegagalan memenuhi jam operasional lokasi tujuan (time windows) dapat menurunkan kepuasan pelanggan atau bahkan menyebabkan kegagalan layanan.
-3.  **Utilitas Armada Rendah**: Penggunaan armada yang tidak seimbang seringkali menyebabkan sebagian kendaraan kelebihan muatan sementara yang lain kurang dimanfaatkan.
+1.  **Biaya yang Boros**: Kalau rute nggak efisien, bensin bakal boros dan jarak tempuh jadi jauh nggak karuan.
+2.  **Jadwal yang Berantakan**: Lokasi tujuan punya jam operasional masing-masing. Kalau kita telat, kepuasan pelanggan bakal jatuh.
+3.  **Armada Nggak Terpakai Maksimal**: Seringkali ada kendaraan yang muatannya penuh banget, tapi yang lain malah sepi. Saya buat sistem ini biar beban kerja armada lebih seimbang.
 
-## Solusi: Pendekatan Optimasi Cerdas
+## Solusi yang Saya Tawarkan
 
-Sistem ini menawarkan pendekatan komprehensif untuk menyelesaikan masalah _Vehicle Routing Problem with Time Windows (VRPTW)_. Solusi kami tidak hanya mencari rute terpendek, tetapi juga rute yang paling "sehat" secara operasional.
+Fokus utama saya adalah menyelesaikan masalah _Vehicle Routing Problem with Time Windows (VRPTW)_. Jadi rute yang dihasilkan bukan cuma yang terpendek, tapi juga yang paling masuk akal secara operasional.
 
-### Fitur Utama
+### Fitur-Fitur Unggulan
 
-**1. Optimasi Multi-Objektif & Armada Heterogen**
-Sistem ini mampu mengelola armada yang terdiri dari berbagai jenis kendaraan (misalnya truk besar, van, dan pickup) secara sekaligus. Algoritma akan secara otomatis memilih kombinasi kendaraan yang paling tepat untuk melayani serangkaian permintaan, mempertimbangkan kapasitas dan biaya operasional masing-masing tipe kendaraan.
+**1. Optimasi Armada Heterogen**
+Saya buat sistem ini fleksibel untuk berbagai jenis kendaraan (kayak truk besar, van, atau motor) secara bersamaan. Algoritmanya otomatis milihin kombinasi kendaraan paling pas buat nganter barang, sesuai kapasitas dan biaya bensin masing-masing.
 
-**2. Transparansi Proses (Academic Replay)**
-Salah satu keunggulan utama sistem ini adalah transparansi. Pengguna tidak hanya disuguhi hasil akhir, tetapi juga dapat melihat bagaimana algoritma bekerja langkah demi langkah. Fitur _Academic Replay_ memungkinkan pengguna, peneliti, atau pengambil keputusan untuk memahami logika di balik setiap keputusan rute yang diambil oleh sistem.
+**2. Transparansi Algoritma (Academic Replay)**
+Ini fitur yang paling saya banggakan. Saya nggak mau hasil rutenya keluar gitu aja tanpa penjelasan. Lewat _Academic Replay_, kita bisa lihat gimana algoritma ini mikir langkah demi langkah sampai ketemu rute terbaik.
 
-**3. Visualisasi Interaktif & Analisis Mendalam**
-Hasil optimasi disajikan dalam bentuk peta interaktif yang detail. Pengguna dapat melihat jalur yang ditempuh, beban muatan setiap kendaraan, hingga status pelayanan setiap titik. Jika terdapat lokasi yang tidak dapat dilayani karena kendala tertentu, sistem akan memberikan analisis penyebabnya secara transparan.
+**3. Visualisasi Peta & Analisis**
+Hasilnya saya tampilin di peta interaktif. Kita bisa lihat jelas jalur yang dilewati, barang yang dibawa tiap kendaraan, sampai status tiap titik. Kalau ada titik yang nggak bisa dilayani, sistem bakal jelasin alasannya secara jujur.
 
-**4. Fleksibilitas Data**
-Dirancang untuk kemudahan penggunaan, sistem mendukung input data melalui file Excel standar maupun penentuan titik koordinat secara langsung pada peta digital, memberikan fleksibilitas penuh bagi pengguna di lapangan.
+**4. Input Data Simpel**
+Data bisa dimasukkan lewat Excel atau tinggal klik-klik aja di peta. Saya bikin se-praktis mungkin buat kebutuhan di lapangan.
 
-## Pendekatan Teknis
+## Cara Kerja Algoritma (Urusan Teknis)
 
-Di balik antarmuka yang ramah pengguna, sistem ini ditenagai oleh rangkaian algoritma metaheuristik yang canggih:
+Di balik layarnya, saya gabungin beberapa metode metaheuristik yang cukup kompleks:
 
-- **Inisialisasi Cerdas**: Menggunakan kombinasi _Sweep Algorithm_ dan _Nearest Neighbor_ untuk membentuk kerangka rute awal yang solid berdasarkan sebaran geografis.
-- **Eksplorasi Global (Ant Colony System)**: Terinspirasi dari perilaku koloni semut, algoritma ini mengeksplorasi ruang solusi yang luas untuk menemukan rute-rute potensial yang mungkin terlewat oleh metode konvensional.
-- **Perbaikan Lokal (RVND)**: Solusi yang ditemukan kemudian dipoles menggunakan metodologi _Randomized Variable Neighborhood Descent_, yang secara iteratif melakukan pertukaran dan pergeseran titik kunjungan untuk meminimalkan total jarak dan biaya hingga mencapai titik optimal.
-
-## Panduan Instalasi & Penggunaan
-
-Untuk menjalankan sistem ini di lingkungan lokal Anda, pastikan Anda telah memiliki Python versi 3.9 atau lebih baru.
-
-**Langkah Instalasi:**
-
-1.  Salin repositori ini ke komputer lokal Anda.
-2.  Disarankan untuk membuat _virtual environment_ agar pustaka tidak tercampur dengan proyek lain.
-3.  Install seluruh kebutuhan sistem dengan menjalankan perintah:
-    `pip install -r requirements.txt`
-
-**Cara Menjalankan:**
-
-Cukup jalankan satu perintah berikut di terminal Anda:
-`streamlit run Program/gui/app.py`
-
-Aplikasi akan otomatis terbuka di peramban web default Anda, siap untuk digunakan.
+- **Inisialisasi (Sweep & Nearest Neighbor)**: Saya pakai buat bikin kerangka rute awal berdasarkan posisi geografisnya.
+- **Eksplorasi Global (Ant Colony System)**: Terinspirasi dari cara kerja semut nyari jalan, algoritma ini bakal nyisir jalur-jalur potensial yang mungkin nggak terpikirkan cara biasa.
+- **Perbaikan Lokal (RVND)**: Hasil rute yang sudah ada dipoles lagi pakai _Randomized Variable Neighborhood Descent_. Titik-titik lokasinya dipindah-pindah sampai ketemu jarak dan biaya yang paling kecil.
 
 ---
 
-_Dikembangkan dengan dedikasi tinggi untuk menghadirkan solusi logistik yang lebih baik dan efisien._
+## 🛠️ Persiapan & Instalasi Lokal
+
+Panduan ini buat yang mau nyoba jalanin project saya di komputer sendiri (Windows/macOS/Linux).
+
+### 1. Minimal Persyaratan
+
+- **Python 3.9+**
+- **RAM Minimal 4GB** (Biar visualisasi petanya lancar)
+
+### 2. Langkah Instalasi
+
+**A. Ambil Source Code**
+Download file ZIP project saya atau pakai git:
+
+```bash
+git clone https://github.com/ketsar28/Smart-Route-Optimization.git
+cd Smart-Route-Optimization
+```
+
+**B. Setup Virtual Environment**
+Biar library-nya nggak berantakan, buat lingkungan virtual dulu:
+
+```bash
+# Windows:
+python -m venv venv
+.\venv\Scripts\activate
+
+# macOS/Linux:
+python3 -m venv venv
+source venv/bin/activate
+```
+
+**C. Install Library**
+Kalau environment sudah aktif, tinggal install library yang saya pakai:
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Cara Menjalankan Aplikasi
+
+Pindah ke folder utama project, lalu ketik perintah ini:
+
+```bash
+streamlit run Program/gui/app.py
+```
+
+Tunggu sebentar, nanti browser bakal otomatis kebuka di alamat `http://localhost:8501`.
+
+---
+
+_Project ini saya kembangkan dengan serius untuk memberikan solusi logistik yang nyata dan efisien._

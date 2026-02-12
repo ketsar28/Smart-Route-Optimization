@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import streamlit as st
 import plotly.graph_objects as go
-from typing import Dict, Any
 
 
 def render_graph_hasil(show_labels: bool = True, show_grid: bool = True) -> None:
@@ -11,13 +10,13 @@ def render_graph_hasil(show_labels: bool = True, show_grid: bool = True) -> None
     result = st.session_state.get("result") or st.session_state.get("last_pipeline_result")
     
     if not data_validated or not result:
-        st.info("ℹ️ **Visualisasi Belum Tersedia**")
+        st.info("ℹ️ **Hasil Visualisasi Belum Ada**")
         st.markdown("""
-        Silakan ikuti langkah berikut:
-        1. Validasi data di tab **Input Data**.
-        2. Jalankan optimasi di tab **Proses Optimasi**.
+        Biar bisa rutenya muncul, coba ikutin ini dulu:
+        1. Validasi data di tab **'Input Data'**.
+        2. Klik tombol optimasi di tab **'Proses Optimasi'**.
         
-        Peta rute akan muncul otomatis di sini setelah optimasi selesai.
+        Nanti peta rutenya bakal muncul otomatis di sini kalau sudah beres hitung.
         """)
         return
 
@@ -38,13 +37,13 @@ def render_graph_hasil(show_labels: bool = True, show_grid: bool = True) -> None
                 })
     
     if failed_clusters:
-        st.error(f"⚠️ **Perhatian: Terdapat {len(failed_clusters)} Cluster Tidak Terlayani** (Ditandai Silang Abu-abu)")
+        st.error(f"⚠️ **Waduh, ada {len(failed_clusters)} rute yang gagal dilayani!** (Yang ada tanda silang abu-abu)")
         
-        with st.expander("Analisis & Solusi Masalah", expanded=True):
+        with st.expander("Kenapa gagal & solusinya?", expanded=True):
             for fail in failed_clusters:
                 st.markdown(f"""
-                - **Cluster {fail['id']}**: {fail.get('reason', 'Alokasi Gagal')}
-                  - **Saran**: Tambahkan unit **{fail['needed']}** di *Input Data* atau kurangi muatan.
+                - **Rute {fail['id']}**: {fail.get('reason', 'Alokasi Gagal')}
+                  - **Saran saya**: Coba tambahin unit **{fail['needed']}** di *Input Data* atau muatannya dikurangi dikit.
                 """)
         st.divider()
     # ------------------------------------------------------------
@@ -57,10 +56,9 @@ def render_graph_hasil(show_labels: bool = True, show_grid: bool = True) -> None
 
     points = st.session_state.get("points", {"depots": [], "customers": []})
     
-    # FIX: Use SEPARATE namespaces to avoid ID collision
-    # Depot uses key "D{id}", Customer uses key "C{id}"
-    depot_coords = {}  # "D{id}" -> (x, y, name)
-    customer_coords = {}  # "C{id}" -> (x, y, name)
+    # Pake ID unik biar nggak tabrakan lokasinya (D buat Depot, C buat Pelanggan)
+    depot_coords = {}
+    customer_coords = {}
     
     # Lookup for Details (for Tooltips)
     node_details = {} # id (int) -> string description
@@ -112,7 +110,7 @@ def render_graph_hasil(show_labels: bool = True, show_grid: bool = True) -> None
 
     # (Failed clusters identified above)
 
-    # draw routes - EACH ROUTE IS INDEPENDENT (no depot-to-depot connections)
+    # Gambar rutenya satu-satu (biar nggak nyambung-nyambung antar depot)
     routes = result.get("routes", [])
     for idx, route in enumerate(routes):
         cluster_id = route.get("cluster_id", idx + 1)
@@ -209,9 +207,9 @@ def render_graph_hasil(show_labels: bool = True, show_grid: bool = True) -> None
                 try:
                     nid_int = int(nid)
                     if nid_int != 0 and nid_int in all_customer_ids: # 0 is depot
-                         served_customer_ids.add(nid_int)
-                         served_demand += customer_demand_map.get(nid_int, 0)
-                except:
+                        served_customer_ids.add(nid_int)
+                        served_demand += customer_demand_map.get(nid_int, 0)
+                except (ValueError, TypeError):
                     pass
     
     unserved_customer_ids = all_customer_ids - served_customer_ids
@@ -352,6 +350,6 @@ def render_graph_hasil(show_labels: bool = True, show_grid: bool = True) -> None
                         "Muatan (kg)": cdata.get("demand", 0)
                     })
                 st.dataframe(unserved_list, hide_index=True, use_container_width=True)
-                st.warning("⚠️ Pelanggan ini tidak masuk dalam rute karena kapasitas penuh atau batasan waktu.")
+                st.warning("⚠️ Pelanggan ini nggak masuk rute, mungkin gara-gara kapasitas penuh atau jam operasionalnya mepet banget.")
             else:
                 st.success("Semua pelanggan terlayani!")

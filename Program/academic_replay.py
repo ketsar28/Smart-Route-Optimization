@@ -1,11 +1,8 @@
 """
-Academic Replay Mode - "Hitung Manual MFVRPTE RVND"
+Mode Replay Akademik - "Hitung Manual MFVRPTE RVND"
 
-This module reproduces EXACTLY the computations from the Word document.
-This module reproduces computations using Dynamic ACS logic to simulate manual calculation variability.
-Optimization logic is now probabilistic matching standard ACS.
-
-MODE: ACADEMIC_REPLAY (default for validation)
+Bagian ini saya buat buat mastiin perhitungan di project sama kayak hitungan manual.
+Logika optimasinya pake ACS biar hasilnya lebih optimal.
 """
 
 import json
@@ -89,13 +86,13 @@ ACADEMIC_DATASET = {
 # DYNAMIC CALCULATION based on user input data.
 # ============================================================
 
-# NOTE: Polar angles are now calculated dynamically in academic_sweep()
+# CATATAN: Sudut polar sekarang diitung otomatis di academic_sweep()
 # WORD_POLAR_ANGLES = {...}  # DEPRECATED
 
 # NOTE: Customers are now sorted dynamically by polar angle
 # WORD_SORTED_CUSTOMERS = [...]  # DEPRECATED
 
-# NOTE: Clusters are now formed dynamically based on user's vehicle capacities
+# CATATAN: Cluster dibentuk otomatis berdasarkan kapasitas armada yang diinput user
 # WORD_CLUSTERS = [...]  # DEPRECATED
 
 # NOTE: Random values for ACS are now generated dynamically
