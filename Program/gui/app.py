@@ -73,6 +73,8 @@ except ImportError as e:
     def load_from_autosave(): return False
     def save_to_autosave(): pass
 
+try:
+    from academic_replay_tab import render_academic_replay
 except ImportError:
     # Silently handle - academic replay is optional
     render_academic_replay = None
