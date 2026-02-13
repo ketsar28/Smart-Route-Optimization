@@ -32,6 +32,9 @@ Hasilnya saya tampilin di peta interaktif. Kita bisa lihat jelas jalur yang dile
 **4. Input Data Simpel**
 Data bisa dimasukkan lewat Excel atau tinggal klik-klik aja di peta. Saya bikin se-praktis mungkin buat kebutuhan di lapangan.
 
+**5. Stabilitas & Keandalan Tinggi (NEW!)**
+Sistem ini sudah saya lengkapi dengan mekanisme **Multi-Start Optimization**. Jika algoritma menemui rute yang sulit (misal: muatan terlalu penuh), sistem bakal otomatis mencoba berbagai kombinasi strategi sampai ketemu solusi yang paling layak. Jadi, Kakak nggak perlu khawatir sistem "nyerah" pas ketemu kasus rumit.
+
 ## Cara Kerja Algoritma (Urusan Teknis)
 
 Di balik layarnya, saya gabungin beberapa metode metaheuristik yang cukup kompleks:

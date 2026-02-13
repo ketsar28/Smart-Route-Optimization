@@ -10,7 +10,7 @@ Sistem optimasi rute untuk distribusi obat dari gudang ke berbagai pelanggan (ru
 ## 🌐 Live Demo
 
 > **Note**: Setelah deploy ke Streamlit Cloud, URL aplikasi akan tersedia di sini.
-> 
+>
 > Contoh URL: `https://harunsatr-rvnd.streamlit.app`
 
 ---
@@ -19,12 +19,12 @@ Sistem optimasi rute untuk distribusi obat dari gudang ke berbagai pelanggan (ru
 
 Program ini menyelesaikan masalah **Multi-Fleet Vehicle Routing Problem with Time Windows (MFVRPTW)** - sebuah masalah optimasi yang kompleks untuk menemukan rute distribusi paling efisien dengan:
 
-| Feature | Description |
-|---------|-------------|
-| 🚗 **Multi-Fleet** | Menggunakan berbagai jenis kendaraan (Motor, Mobil Kecil, Mobil Besar) dengan kapasitas dan biaya berbeda |
-| ⏰ **Time Windows** | Setiap pelanggan memiliki waktu layanan yang harus dipenuhi |
-| 📦 **Kapasitas** | Setiap kendaraan memiliki batasan kapasitas maksimal |
-| 💰 **Optimasi Biaya** | Meminimalkan biaya tetap (fixed cost) dan biaya variabel (per km) |
+| Feature               | Description                                                                                               |
+| --------------------- | --------------------------------------------------------------------------------------------------------- |
+| 🚗 **Multi-Fleet**    | Menggunakan berbagai jenis kendaraan (Motor, Mobil Kecil, Mobil Besar) dengan kapasitas dan biaya berbeda |
+| ⏰ **Time Windows**   | Setiap pelanggan memiliki waktu layanan yang harus dipenuhi                                               |
+| 📦 **Kapasitas**      | Setiap kendaraan memiliki batasan kapasitas maksimal                                                      |
+| 💰 **Optimasi Biaya** | Meminimalkan biaya tetap (fixed cost) dan biaya variabel (per km)                                         |
 
 ---
 
@@ -81,12 +81,12 @@ Program ini menggunakan algoritma multi-tahap untuk menghasilkan solusi optimal:
 
 Fitur khusus untuk **validasi akademis** dengan langkah-langkah deterministik:
 
-| Feature | Description |
-|---------|-------------|
-| 📝 **NN_TW_AWARE** | Nearest Neighbor dengan hard constraint time window |
-| 🐜 **ACS_REPLAY** | Rute predefined sesuai dokumen Word |
-| 🔄 **RVND_REPLAY** | Swap pairs predefined dengan capacity hard constraint |
-| ⏰ **Time Window Analysis** | Analisis detail kepatuhan time window per pelanggan |
+| Feature                     | Description                                           |
+| --------------------------- | ----------------------------------------------------- |
+| 📝 **NN_TW_AWARE**          | Nearest Neighbor dengan hard constraint time window   |
+| 🐜 **ACS_REPLAY**           | Rute predefined sesuai dokumen Word                   |
+| 🔄 **RVND_REPLAY**          | Swap pairs predefined dengan capacity hard constraint |
+| ⏰ **Time Window Analysis** | Analisis detail kepatuhan time window per pelanggan   |
 
 ---
 
@@ -94,19 +94,20 @@ Fitur khusus untuk **validasi akademis** dengan langkah-langkah deterministik:
 
 Program dilengkapi dengan GUI berbasis **Streamlit** yang menampilkan:
 
-| Tab | Fitur |
-|-----|-------|
-| 📍 **Input Titik** | Input koordinat depot dan pelanggan |
-| 📋 **Input Data** | Input data pelanggan (demand, time windows, service time) |
-| 📈 **Hasil** | Tabel detail rute per kendaraan |
-| 🗺️ **Graph Hasil** | Visualisasi rute dengan Plotly |
-| 🎓 **Academic Replay** | Mode replay untuk validasi akademis |
+| Tab                    | Fitur                                                     |
+| ---------------------- | --------------------------------------------------------- |
+| 📍 **Input Titik**     | Input koordinat depot dan pelanggan                       |
+| 📋 **Input Data**      | Input data pelanggan (demand, time windows, service time) |
+| 📈 **Hasil**           | Tabel detail rute per kendaraan                           |
+| 🗺️ **Graph Hasil**     | Visualisasi rute dengan Plotly                            |
+| 🎓 **Academic Replay** | Mode replay untuk validasi akademis                       |
 
 ---
 
 ## 🚀 Quick Start
 
 ### Opsi 1: Akses Online (Recommended)
+
 Langsung akses aplikasi di **[Streamlit Cloud](https://mfvrptw-optimizer.streamlit.app)** - tidak perlu instalasi!
 
 ### Opsi 2: Instalasi Lokal
@@ -176,12 +177,14 @@ Program/
 ## ☁️ Deployment ke Streamlit Cloud
 
 ### Prasyarat
+
 - Akun GitHub dengan repository ini
 - Akun Streamlit Cloud (gratis di [share.streamlit.io](https://share.streamlit.io))
 
 ### Langkah-langkah Deploy:
 
 #### Step 1: Pastikan Repository Sudah di GitHub
+
 ```bash
 # Cek remote repository
 git remote -v
@@ -194,11 +197,13 @@ git push origin main
 ```
 
 #### Step 2: Buka Streamlit Cloud
+
 1. Kunjungi **[share.streamlit.io](https://share.streamlit.io)**
 2. Klik **"Sign in with GitHub"**
 3. Authorize Streamlit untuk mengakses repository Anda
 
 #### Step 3: Deploy Aplikasi Baru
+
 1. Klik tombol **"New app"** (pojok kanan atas)
 2. Isi form dengan:
    | Field | Value |
@@ -210,6 +215,7 @@ git push origin main
 3. Klik **"Deploy!"**
 
 #### Step 4: Tunggu Proses Build
+
 - Streamlit akan menginstall dependencies dari `requirements.txt`
 - Proses biasanya memakan waktu 2-5 menit
 - Setelah selesai, aplikasi akan live di URL seperti:
@@ -218,23 +224,27 @@ git push origin main
   ```
 
 ### ⚙️ File yang Diperlukan untuk Deploy
-| File | Status | Keterangan |
-|------|--------|------------|
-| `requirements.txt` | ✅ Ada | Dependencies Python |
-| `gui/app.py` | ✅ Ada | Entry point aplikasi |
-| `.streamlit/config.toml` | ✅ Ada | Konfigurasi tema |
-| `.gitignore` | ✅ Ada | Exclude files |
+
+| File                     | Status | Keterangan           |
+| ------------------------ | ------ | -------------------- |
+| `requirements.txt`       | ✅ Ada | Dependencies Python  |
+| `gui/app.py`             | ✅ Ada | Entry point aplikasi |
+| `.streamlit/config.toml` | ✅ Ada | Konfigurasi tema     |
+| `.gitignore`             | ✅ Ada | Exclude files        |
 
 ### 🔧 Troubleshooting
 
 **Error: ModuleNotFoundError**
+
 - Pastikan semua package ada di `requirements.txt`
 - Jalankan `pip freeze > requirements.txt` untuk update
 
 **Error: File not found**
+
 - Pastikan path `gui/app.py` benar (relatif dari root repository)
 
 **Aplikasi lambat saat pertama kali load**
+
 - Normal untuk free tier Streamlit Cloud
 - Aplikasi "tidur" setelah tidak aktif beberapa waktu
 
@@ -245,6 +255,7 @@ git push origin main
 ### Parameter Algoritma
 
 **ACS Parameters** (`acs_solver.py`):
+
 ```python
 m = 2          # Jumlah semut
 alpha = 0.5    # Pengaruh pheromone (updated)
@@ -255,19 +266,21 @@ iterations = 2 # Jumlah iterasi
 ```
 
 **RVND Parameters** (`rvnd.py`):
+
 ```python
-MAX_INTER_ITERATIONS = 50   # Maksimal iterasi inter-route
+MAX_RETRIES = 50            # Mekanisme Multi-Start untuk stabilitas
+MAX_INTER_ITERATIONS = 100  # Maksimal iterasi inter-route
 MAX_INTRA_ITERATIONS = 100  # Maksimal iterasi intra-route
-SEED = 84                   # Random seed untuk deterministic behavior
+SEED = dynamic              # Berubah setiap klik untuk eksplorasi rute baru
 ```
 
 ### Vehicle Types
 
-| Type | Capacity | Fixed Cost | Variable Cost/km |
-|------|----------|------------|------------------|
-| A (Motor) | ≤ 60 | Rp 40,000 | Rp 1,000 |
-| B (Mobil Kecil) | 60-100 | Rp 60,000 | Rp 1,500 |
-| C (Mobil Besar) | 100-150 | Rp 80,000 | Rp 2,000 |
+| Type            | Capacity | Fixed Cost | Variable Cost/km |
+| --------------- | -------- | ---------- | ---------------- |
+| A (Motor)       | ≤ 60     | Rp 40,000  | Rp 1,000         |
+| B (Mobil Kecil) | 60-100   | Rp 60,000  | Rp 1,500         |
+| C (Mobil Besar) | 100-150  | Rp 80,000  | Rp 2,000         |
 
 ---
 
@@ -292,6 +305,7 @@ Cluster 4: [C5, C7, C8] - Demand: 64 - Vehicle: Type B
 ## 🧪 Testing & Validasi
 
 Program melakukan validasi otomatis:
+
 - ✅ Semua pelanggan terlayani
 - ✅ Kapasitas kendaraan tidak melebihi batas
 - ✅ Time windows dipenuhi
@@ -303,12 +317,12 @@ Program melakukan validasi otomatis:
 
 ## 📖 Dokumentasi Lengkap
 
-| Document | Description |
-|----------|-------------|
-| [README.md](README.md) | Panduan utama (file ini) |
-| [docs/dokumentasi_id.md](docs/dokumentasi_id.md) | Dokumentasi teknis lengkap |
+| Document                                                 | Description                |
+| -------------------------------------------------------- | -------------------------- |
+| [README.md](README.md)                                   | Panduan utama (file ini)   |
+| [docs/dokumentasi_id.md](docs/dokumentasi_id.md)         | Dokumentasi teknis lengkap |
 | [docs/rvnd_specification.md](docs/rvnd_specification.md) | Spesifikasi algoritma RVND |
-| [docs/final_summary.md](docs/final_summary.md) | Ringkasan hasil optimasi |
+| [docs/final_summary.md](docs/final_summary.md)           | Ringkasan hasil optimasi   |
 
 ---
 
@@ -324,9 +338,9 @@ Program melakukan validasi otomatis:
 
 ## 📚 Referensi
 
-- Dorigo, M., & Gambardella, L. M. (1997). *Ant colony system: a cooperative learning approach to the traveling salesman problem.*
-- Hansen, P., & Mladenović, N. (2001). *Variable neighborhood search: Principles and applications.*
-- Gillett, B. E., & Miller, L. R. (1974). *A heuristic algorithm for the vehicle-dispatch problem.*
+- Dorigo, M., & Gambardella, L. M. (1997). _Ant colony system: a cooperative learning approach to the traveling salesman problem._
+- Hansen, P., & Mladenović, N. (2001). _Variable neighborhood search: Principles and applications._
+- Gillett, B. E., & Miller, L. R. (1974). _A heuristic algorithm for the vehicle-dispatch problem._
 
 ---
 
