@@ -1,9 +1,11 @@
 # Dokumentasi Program MFVRPTW
 
 ## Ringkasan Proyek
+
 Program ini menyelesaikan masalah **Multi-Fleet Vehicle Routing Problem with Time Windows (MFVRPTW)** untuk distribusi obat dari satu gudang ke 10 pelanggan (rumah sakit, klinik, puskesmas). Solusi yang dihasilkan sepenuhnya mengikuti spesifikasi pada dokumen referensi (DOCX), baik dari sisi data, parameter algoritma, maupun alur perhitungan.
 
 Pipeline optimasi:
+
 1. **Perhitungan Matriks Jarak & Waktu** – Jarak Euclidean dari koordinat, waktu tempuh 1 km = 1 menit.
 2. **Sweep Algorithm** – Pengurutan pelanggan berdasarkan sudut polar, dilanjutkan pembentukan cluster kapasitas (1 cluster = 1 kendaraan).
 3. **Nearest Neighbor (NN)** – Inisialisasi rute awal per cluster.
@@ -13,6 +15,7 @@ Pipeline optimasi:
 Seluruh hasil akhir dibekukan dalam `data/processed/final_solution.json` dan rangkuman tekstual `docs/final_summary.md`. GUI hanya membaca data tersebut tanpa menghitung ulang.
 
 ## Struktur Folder Utama
+
 ```
 Program/
 ├─ data/processed/           # Artefak hasil parsing dan optimasi
@@ -27,6 +30,7 @@ Program/
 ```
 
 ## Cara Menjalankan Pipeline (Opsional)
+
 > Semua artefak final sudah tersedia. Jalankan perintah berikut hanya bila perlu regenerasi data.
 
 1. Aktivasi virtual environment (PowerShell):
@@ -43,6 +47,7 @@ Program/
    ```
 
 ## Menjalankan Dashboard Streamlit
+
 1. Pastikan dependensi telah terpasang:
    ```powershell
    .\.venv\Scripts\python.exe -m pip install streamlit plotly pandas
@@ -54,10 +59,11 @@ Program/
 3. Buka browser ke `http://localhost:8501`.
 
 ## Panduan Upload ke GitHub
+
 1. Buat file `.gitignore` bila belum ada (opsional) dan inisialisasi git:
    ```powershell
    git init
-   git remote add origin https://github.com/Harunsatr/Route-Optimization.git
+   git remote add origin https://github.com/[YOUR_USERNAME]/Route-Optimization.git
    ```
 2. Tambahkan file, commit, dan push:
    ```powershell
@@ -68,6 +74,7 @@ Program/
    ```
 
 ## Catatan Penting
+
 - Jangan ubah angka dalam `final_solution.json` agar konsisten dengan dokumen.
 - GUI hanya membaca hasil yang sudah jadi; tidak ada perhitungan ulang di sisi front-end.
 - Semua deskripsi, parameter, dan asumsi sesuai dokumen DOCX asli.

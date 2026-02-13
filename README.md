@@ -1,6 +1,6 @@
 # Smart Route Optimization System (Decision Support System)
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://harunsatr-rvnd.streamlit.app)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://[YOUR_APP_NAME].streamlit.app)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -118,7 +118,6 @@ Program/
 
 ---
 
-_Project ini saya kembangkan dengan serius untuk memberikan solusi logistik yang nyata dan efisien._
+_Project ini dikembangkan untuk memberikan solusi logistik yang nyata dan efisien._
 
-**Author: Harunsatr** - [GitHub](https://github.com/Harunsatr)
 ⭐ **Jika project ini membantu, jangan lupa berikan star di GitHub!**
