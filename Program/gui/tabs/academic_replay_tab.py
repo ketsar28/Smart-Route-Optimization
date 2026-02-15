@@ -442,7 +442,7 @@ def _generate_verification_log(routes_snapshot: List[List[int]], dataset: Dict[s
         fleet_sorted = sorted(dataset["fleet"], key=lambda x: x["capacity"])
         assigned_vehicle = next((v for v in fleet_sorted if v["capacity"] >= route_demand), None)
         
-        veh_name = assigned_vehicle["name"] if assigned_vehicle else "N/A"
+        veh_name = assigned_vehicle.get("name", assigned_vehicle.get("id", "N/A")) if assigned_vehicle else "N/A"
         veh_cost_per_km = assigned_vehicle.get("variable_cost_per_km", 0) if assigned_vehicle else 0
         veh_cap = assigned_vehicle["capacity"] if assigned_vehicle else 0
 
