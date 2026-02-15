@@ -602,6 +602,21 @@ def _display_rvnd_inter_iterations(logs: List[Dict], dataset: Dict[str, Any] = N
             - **Initial**: Kondisi awal sebelum dilakukan pergerakan apapun (basis pembanding).
             """)
 
+    # --- LEGEND & EXPLANATION (CAPACITY) ---
+    with st.expander("📝 Keterangan Notasi & Istilah"):
+        st.markdown("""
+        **Istilah Gerakan (Detail Move):**
+        - **A -> RY**: Memindahkan pelanggan A ke Rute Y (Shift).
+        - **A, B**: Menukar posisi pelanggan A dengan pelanggan B (Swap).
+        - **(A,B), C**: Menukar sepasang pelanggan (A,B) dengan pelanggan C.
+        - **Cross A, B**: Memotong jalur di titik A dan B, lalu menyambung silang.
+
+        **Notasi Kapasitas & Fleet:**
+        - **Simbol (X)**: Menandakan rute tersebut **tidak dapat terangkut** oleh sisa armada yang tersedia. 
+        - **Alasan (Fleet A:1/2, ...)**: Format ini dibaca **(Unit Digunakan / Total Stok)**. 
+        - **Kenapa Fleet C:0/1 tapi Status X?**: Jika muatan rute (kg) lebih besar dari kapasitas kendaraan terbesar yang tersisa (Fleet C), maka rute tersebut tetap dianggap **X (Tidak Layak)** meskipun unit C masih ada 1.
+        """)
+
     st.divider()
 
     # === ITERATION TABLE ===
@@ -615,8 +630,8 @@ def _display_rvnd_inter_iterations(logs: List[Dict], dataset: Dict[str, Any] = N
     table_data = []
     prev_distance = None
 
-    for l in inter_logs:
-        iter_id = l.get("iteration_id", l.get("iteration", "?"))
+    for i, l in enumerate(inter_logs, 1):
+        iter_id = i # Force sequential ID starting from 1
         neighborhood = l.get("neighborhood", "-")
         improved = l.get("improved", False)
         total_dist = l.get("total_distance", 0)
@@ -688,7 +703,7 @@ def _display_rvnd_inter_iterations(logs: List[Dict], dataset: Dict[str, Any] = N
     selected_iter = st.number_input("Pilih Iterasi untuk Detail:", min_value=min_iter, max_value=max_iter, value=min_iter)
     
     # Find selected log
-    selected_log = next((l for l in inter_logs if l.get("iteration_id") == selected_iter or l.get("iteration") == selected_iter), None)
+    selected_log = inter_logs[selected_iter - 1] if 0 < selected_iter <= len(inter_logs) else None
     
     if selected_log and "candidates" in selected_log:
         candidates = selected_log["candidates"]
@@ -727,7 +742,7 @@ def _display_rvnd_inter_iterations(logs: List[Dict], dataset: Dict[str, Any] = N
             # Common Status columns
             is_feasible = c.get("feasible", False)
             row_data["Status"] = "Layak" if is_feasible else "Tidak Layak"
-            row_data["Alasan"] = c.get("reason", "-")
+            row_data["Info Detail"] = c.get("reason_detail", c.get("reason", "-"))
             row_data["Delta Jarak"] = f"{c.get('delta'):+.2f}" if c.get("delta") is not None else ""
             
             cand_rows.append(row_data)
@@ -762,20 +777,6 @@ def _display_rvnd_inter_iterations(logs: List[Dict], dataset: Dict[str, Any] = N
         else:
             st.info("Tidak ada data kandidat untuk ditampilkan.")
 
-        # --- LEGEND & EXPLANATION (CAPACITY) ---
-        with st.expander("📝 Keterangan Notasi & Istilah"):
-            st.markdown("""
-            **Istilah Gerakan (Detail Move):**
-            - **A -> RY**: Memindahkan pelanggan A ke Rute Y (Shift).
-            - **A, B**: Menukar posisi pelanggan A dengan pelanggan B (Swap).
-            - **(A,B), C**: Menukar sepasang pelanggan (A,B) dengan pelanggan C.
-            - **Cross A, B**: Memotong jalur di titik A dan B, lalu menyambung silang.
-
-            **Notasi Kapasitas:**
-            - **Simbol (X)**: Menandakan rute tersebut **tidak dapat terangkut** oleh sisa armada yang tersedia. 
-            - **Alasan (Fleet A:1/2, ...)**: Format ini dibaca **(Unit Digunakan / Total Stok)**. 
-            - **Kenapa Fleet C:0/1 tapi Status X?**: Jika muatan rute (kg) lebih besar dari kapasitas kendaraan terbesar yang tersisa (Fleet C), maka rute tersebut tetap dianggap **X (Tidak Layak)** meskipun unit C masih ada 1.
-            """)
 
         # --- DISTANCE CHECK MATRIX (Hitung Jarak) ---
         st.markdown(f"**Hitung Perubahan Jarak (Iterasi {selected_iter})**")
@@ -1611,92 +1612,114 @@ def render_academic_replay() -> None:
     # ============================================================
     # SECTION 2: Run Optimization Button (Inline)
     # ============================================================
-    st.markdown("---")
+    col_u1, col_u2 = st.columns([4, 1])
+    with col_u1:
+        if st.button("🚀 Jalankan Optimasi", type="primary", use_container_width=True):
+            with st.spinner("Menjalankan optimasi MFVRPTW..."):
+                try:
+                    import sys
+                    import importlib
+                    sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-    if st.button("🚀 Jalankan Optimasi", type="primary", use_container_width=True):
-        with st.spinner("Menjalankan optimasi MFVRPTW..."):
-            try:
-                import sys
-                import importlib
-                sys.path.insert(
-                    0, str(Path(__file__).resolve().parent.parent.parent))
+                    # Force reload to ensure dynamic updates
+                    import academic_replay
+                    import rvnd
+                    import acs_solver
+                    import sweep_nn
+                    importlib.reload(rvnd)
+                    importlib.reload(acs_solver)
+                    importlib.reload(sweep_nn)
+                    importlib.reload(academic_replay)
+                    from academic_replay import run_academic_replay
 
-                # Force reload to ensure dynamic updates (fixes TypeError on hot reload)
-                import academic_replay
-                importlib.reload(academic_replay)
-                from academic_replay import run_academic_replay
+                    # Gather dynamic data
+                    user_vehicles = st.session_state.get("user_vehicles", [])
+                    points = st.session_state.get("points", {})
+                    raw_customers = points.get("customers", [])
+                    input_data = st.session_state.get("inputData", {})
+                    customer_tw = input_data.get("customerTimeWindows", [])
 
-                # Gather dynamic data
-                user_vehicles = st.session_state.get("user_vehicles", [])
-                points = st.session_state.get("points", {})
-                raw_customers = points.get("customers", [])
-                input_data = st.session_state.get("inputData", {})
-                customer_tw = input_data.get("customerTimeWindows", [])
-
-                # Build customers list
-                user_customers = []
-                for i, c in enumerate(raw_customers):
-                    tw_data = customer_tw[i] if i < len(customer_tw) else {}
-                    customer = {
-                        "id": c.get("id", i + 1),
-                        "name": c.get("name", f"Pelanggan {i + 1}"),
-                        "x": c.get("x", c.get("lng", 0)),
-                        "y": c.get("y", c.get("lat", 0)),
-                        "demand": tw_data.get("demand", c.get("demand", 0)),
-                        "service_time": tw_data.get("service_time", c.get("service_time", 10)),
-                        "time_window": {
-                            "start": tw_data.get("tw_start", c.get("tw_start", "08:00")),
-                            "end": tw_data.get("tw_end", c.get("tw_end", "17:00"))
+                    # Build customers list
+                    user_customers = []
+                    for i, c in enumerate(raw_customers):
+                        tw_data = customer_tw[i] if i < len(customer_tw) else {}
+                        customer = {
+                            "id": c.get("id", i + 1),
+                            "name": c.get("name", f"Pelanggan {i + 1}"),
+                            "x": c.get("x", c.get("lng", 0)),
+                            "y": c.get("y", c.get("lng", 0)),
+                            "demand": tw_data.get("demand", c.get("demand", 0)),
+                            "service_time": tw_data.get("service_time", c.get("service_time", 10)),
+                            "time_window": {
+                                "start": tw_data.get("tw_start", c.get("tw_start", "08:00")),
+                                "end": tw_data.get("tw_end", c.get("tw_end", "17:00"))
+                            }
                         }
-                    }
-                    user_customers.append(customer)
+                        user_customers.append(customer)
 
-                # Depot
-                raw_depots = points.get("depots", [])
-                user_depot = None
-                if raw_depots:
-                    d = raw_depots[0]
-                    depot_tw = d.get(
-                        "time_window", {"start": "08:00", "end": "17:00"})
-                    user_depot = {
-                        "id": 0,
-                        "name": d.get("name", "Depot"),
-                        "x": d.get("x", d.get("lng", 0)),
-                        "y": d.get("y", d.get("lat", 0)),
-                        "time_window": {
-                            "start": depot_tw.get("start", "08:00"),
-                            "end": depot_tw.get("end", "17:00")
-                        },
-                        "service_time": d.get("service_time", 0)
-                    }
+                    # Depot
+                    raw_depots = points.get("depots", [])
+                    user_depot = None
+                    if raw_depots:
+                        d = raw_depots[0]
+                        depot_tw = d.get(
+                            "time_window", {"start": "08:00", "end": "17:00"})
+                        user_depot = {
+                            "id": 0,
+                            "name": d.get("name", "Depot"),
+                            "x": d.get("x", d.get("lng", 0)),
+                            "y": d.get("y", d.get("lat", 0)),
+                            "time_window": {
+                                "start": depot_tw.get("start", "08:00"),
+                                "end": depot_tw.get("end", "17:00")
+                            },
+                            "service_time": d.get("service_time", 0)
+                        }
 
-                # ACS Params
-                user_acs_params = st.session_state.get("acs_params", None)
+                    # ACS Params
+                    user_acs_params = st.session_state.get("acs_params", None)
 
-                # Distance Multiplier
-                distance_multiplier = float(
-                    input_data.get("distance_multiplier", 1.0))
+                    # Distance Multiplier
+                    distance_multiplier = float(
+                        input_data.get("distance_multiplier", 1.0))
 
-                # Run!
-                result = run_academic_replay(
-                    user_vehicles=user_vehicles,
-                    user_customers=user_customers if user_customers else None,
-                    user_depot=user_depot,
-                    user_acs_params=user_acs_params,
-                    distance_multiplier=distance_multiplier
-                )
-                st.session_state["academic_result"] = result
-                st.session_state["result"] = result
-                st.session_state["data_validated"] = True
-                st.toast("Optimasi selesai!", icon="🎉")
-                st.rerun()
+                    # Run!
+                    result = run_academic_replay(
+                        user_vehicles=user_vehicles,
+                        user_customers=user_customers if user_customers else None,
+                        user_depot=user_depot,
+                        user_acs_params=user_acs_params,
+                        distance_multiplier=distance_multiplier
+                    )
+                    st.session_state["academic_result"] = result
+                    st.session_state["result"] = result
+                    st.session_state["data_validated"] = True
+                    st.toast("Optimasi selesai!", icon="🎉")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error: {e}")
+                    import traceback
+                    st.code(traceback.format_exc())
+
+    with col_u2:
+        if st.button("🧹 Bersihkan Sesi", use_container_width=True, help="Bersihkan cache aplikasi dan reset semua data hasil perhitungan."):
+            # 1. Clear session state related to results
+            keys_to_clear = ["academic_result", "result", "log_output"]
+            for k in keys_to_clear:
+                if k in st.session_state:
+                    del st.session_state[k]
+            
+            # 2. Delete stagnant JSON file
+            try:
+                if ACADEMIC_OUTPUT_PATH.exists():
+                    ACADEMIC_OUTPUT_PATH.unlink()
+                st.toast("Data hasil & cache berhasil dibersihkan!", icon="✅")
             except Exception as e:
-                st.error(f"Error: {e}")
-                import traceback
-                st.code(traceback.format_exc())
+                st.error(f"Gagal menghapus file: {e}")
+            
+            st.rerun()
 
-    st.caption(
-        "Klik untuk menjalankan optimasi dengan data armada, pelanggan, dan parameter ACS yang sudah diinput.")
+    st.caption("Klik untuk menjalankan optimasi dengan data terbaru. Gunakan 'Bersihkan Sesi' jika hasil terasa tidak update.")
 
     # ============================================================
     # SECTION 3: Results Display
@@ -1717,6 +1740,19 @@ def render_academic_replay() -> None:
         st.info(
             "💡 Belum ada hasil. Klik tombol **Jalankan Optimasi** di atas ya.")
         return
+
+    # --- LEGEND & EXPLANATION ---
+    with st.expander("ℹ️ Penjelasan Status Rute (Apa itu 'X'?)", expanded=True):
+        st.markdown("""
+        Dalam sistem ini, rute yang tidak dapat terangkut ditandai dengan **'X'** (Unassigned).
+        
+        **Kenapa muncul 'X'?**
+        1. **Melebihi Kapasitas Terbesar**: Muatan satu rute (misal 175kg) lebih besar dari kapasitas kendaraan terbesar yang tersedia (misal Fleet B=200kg, Unit habis; atau Fleet C=150kg).
+        2. **Stok Unit Habis**: Rute mungkin layak untuk kendaraan tertentu, tapi semua kendaraan tipe tersebut sudah terpakai oleh rute lain yang lebih efisien.
+        3. **Pelanggaran Time Window**: (Jika mode strict aktif) Rute tidak bisa diselesaikan tepat waktu bahkan oleh kendaraan tercepat.
+        
+        *Contoh: Jika Anda punya Fleet C (150kg) dan muatan rute 175kg, rute tersebut akan ditandai **'X'** karena tidak ada unit yang cukup besar.*
+        """)
     
     # Ensure global state is synced if we have a result
     if st.session_state.get("result") != result:

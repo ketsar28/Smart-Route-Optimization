@@ -137,8 +137,9 @@ def generate_capacity_log_candidate(routes: List[Dict], demands: List[float], in
             })
     available_units.sort(key=lambda x: x["capacity"]) # Best Fit
     
+    
     indexed_demands = sorted(enumerate(demands), key=lambda x: x[1], reverse=True)
-    assignments = {} # Index -> Fleet ID
+    assignments = {} 
     
     for idx, d in indexed_demands:
         assigned_fid = "X"
@@ -157,15 +158,26 @@ def generate_capacity_log_candidate(routes: List[Dict], demands: List[float], in
         
     is_feasible = all(fid != "X" for fid in assignments.values())
     
-    # Create detailed reason: "Layak (A:1/2, B:2/2, C:1/1)"
     stock_parts = [f"{fid}:{used_stock[fid]}/{total_stock[fid]}" for fid in unique_ids]
     stock_str = ", ".join(stock_parts)
     
+    max_capacity = max((f["capacity"] for f in fleet_data), default=0)
+    
     if is_feasible:
-        reason = f"Layak ({stock_str})"
+        reason = f"Terangkut ({stock_str})"
+        reason_detail = f"Semua rute terangkut oleh armada tersedia. {stock_str}"
     else:
         x_count = list(assignments.values()).count("X")
-        reason = f"Kapasitas Terlampaui: {x_count} rute tak terangkut ({stock_str})"
+        # Cari muatan yang gagal
+        failed_loads = [demands[i] for i, fid in assignments.items() if fid == "X"]
+        highest_failed = max(failed_loads) if failed_loads else 0
+        
+        reason = f"X: {x_count} Rute Berlebih"
+        
+        if highest_failed > max_capacity:
+            reason_detail = f"Gagal: Muatan rute ({highest_failed:.1f}kg) melebihi kapasitas terbesar ({max_capacity}kg). Stok: {stock_str}"
+        else:
+            reason_detail = f"Gagal: Rute layak tapi stok unit tidak cukup. Stok terpakai: {stock_str}"
 
     return {
         "detail": "Accepted" if routes else "Stagnan",
@@ -173,6 +185,7 @@ def generate_capacity_log_candidate(routes: List[Dict], demands: List[float], in
         "route_loads": route_loads,
         "feasible": is_feasible,
         "reason": reason,
+        "reason_detail": reason_detail,
         "delta": round(delta, 2),
         "total_distance": round(sum(r.get("total_distance", 0) for r in routes), 2) if routes else 0.0,
         "route_distances": [r.get("total_distance", 0) for r in routes] if routes else [],
@@ -785,7 +798,6 @@ def rvnd_inter(
         )
         
         if result["accepted"]:
-            # ... (as before)
             current_routes = result["new_routes"]
             current_distance = result["distance_after"]
             best_unassigned = result["unassigned_after"]
@@ -1300,7 +1312,7 @@ def main() -> None:
     summary["tw_after"] = sum(r["improved"]["total_tw_violation"] for r in reassigned_results)
     summary["capacity_violations_after"] = sum(1 for r in reassigned_results if r["improved"]["capacity_violation"] > 0)
 
-    output = {
+    return {
         "routes": reassigned_results,
         "summary": summary,
         "parameters": {
@@ -1313,18 +1325,3 @@ def main() -> None:
         "vehicle_usage": used_vehicles,
         "iteration_logs": all_iteration_logs
     }
-
-    with RVND_PATH.open("w", encoding="utf-8") as handle:
-        json.dump(output, handle, indent=2)
-
-    print(
-        "RVND Results (GLOBAL):\n"
-        f"  Distance: {round(summary['distance_before'], 3)} -> {round(summary['distance_after'], 3)}\n"
-        f"  Objective: {round(summary['objective_before'], 3)} -> {round(summary['objective_after'], 3)}\n"
-        f"  TW Violations: {round(summary['tw_before'], 3)} -> {round(summary['tw_after'], 3)}\n"
-        f"  Capacity Violations: {summary['capacity_violations_before']} -> {summary['capacity_violations_after']}"
-    )
-
-
-if __name__ == "__main__":
-    main()

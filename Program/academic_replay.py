@@ -248,13 +248,3 @@ def run_academic_replay(
         },
         "status": "success"
     }
-
-def main():
-    """CLI Entry point for testing."""
-    result = run_academic_replay()
-    with open(OUTPUT_PATH, 'w', encoding='utf-8') as f:
-        json.dump(result, f, indent=2)
-    print(f"[Academic Replay] Done. Results saved to {OUTPUT_PATH}")
-
-if __name__ == "__main__":
-    main()
