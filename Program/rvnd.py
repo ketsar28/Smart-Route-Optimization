@@ -18,7 +18,7 @@ MAX_INTRA_ITERATIONS = 400
 # Neighborhood definitions
 INTER_ROUTE_NEIGHBORHOODS = ["shift_1_0", "shift_2_0", "swap_1_1", "swap_2_1", "swap_2_2", "cross"]
 INTRA_ROUTE_NEIGHBORHOODS = ["two_opt", "or_opt", "reinsertion", "exchange"]
-MAX_LOG_CANDIDATES = 40
+MAX_LOG_CANDIDATES = 20
 
 
 def assign_vehicle_by_demand(total_demand: float, fleet_data: List[Dict], used_vehicles: Dict[str, int]) -> Optional[str]:
@@ -42,26 +42,51 @@ def assign_vehicle_by_demand(total_demand: float, fleet_data: List[Dict], used_v
 
 def can_assign_fleet(demands: List[float], fleet_data: List[Dict]) -> Tuple[bool, int, float]:
     """
-    Checks if demands can be assigned to fleets.
-    Returns: (feasible, unassigned_count, penalty_magnitude)
-    
-    Penalty now includes:
-    1. Excess Demand (how much unassigned routes exceed available capacity)
-    2. Load Balancing Tie-Breaker (sum of squares) to encourage reducing max demands
+    Checks if demands can be assigned to fleets. Efficiently.
     """
-    # 1. Expand fleet (greedy approach matches UI logic)
+    # 1. Expand fleet (Pre-sorted available units)
     available_units = []
     for f in fleet_data:
+        cap = f["capacity"]
         for _ in range(f["units"]):
-            available_units.append({
-                "id": f["id"],
-                "capacity": f["capacity"],
-                "used": False
-            })
+            available_units.append(cap)
     
-    # Sort fleets ASC by capacity (Smallest First -> Best Fit)
-    # This prevents using a large vehicle for a small demand when a smaller vehicle is available.
-    available_units.sort(key=lambda x: x["capacity"], reverse=False)
+    # Sort ASC
+    available_units.sort()
+    
+    # Sort demands DESC (hardest to fit first)
+    sorted_demands = sorted(demands, reverse=True)
+    
+    unassigned_count = 0
+    total_excess = 0.0
+    
+    # Track used unit indices manually to avoid object creation
+    used_indices = set()
+    
+    for d in sorted_demands:
+        assigned = False
+        for idx, cap in enumerate(available_units):
+            if idx not in used_indices and cap >= d:
+                used_indices.add(idx)
+                assigned = True
+                break
+        
+        if not assigned:
+            unassigned_count += 1
+            # Penalty: find largest available unused unit
+            best_unused_cap = 0
+            best_idx = -1
+            for idx in range(len(available_units)-1, -1, -1):
+                if idx not in used_indices:
+                    best_unused_cap = available_units[idx]
+                    best_idx = idx
+                    break
+            
+            if best_unused_cap > 0:
+                total_excess += max(0.0, d - best_unused_cap)
+                used_indices.add(best_idx)
+            else:
+                total_excess += d
     
     # Sort demands DESC (hardest to fit first)
     sorted_demands = sorted(demands, reverse=True)
@@ -633,10 +658,6 @@ def apply_inter_neighborhood(
         for i in range(n_routes):
             if len(routes[i]["sequence"]) < 4:
                 continue
-            for j in range(n_routes):
-                if i == j:
-                    continue
-                seq_i = routes[i]["sequence"][1:-1]
                 seq_j = routes[j]["sequence"][1:-1]
                 for idx in range(len(seq_i) - 1):
                     ca1, ca2 = seq_i[idx], seq_i[idx+1]
@@ -793,6 +814,7 @@ def rvnd_inter(
             break
         
         neighborhood = rng.choice(NL)
+        print(f"[Academic Replay] Running neighborhood: {neighborhood} (Iter {iteration})...")
         result = apply_inter_neighborhood(
             neighborhood, current_routes, instance, distance_data, fleet_list, rng, academic_mode
         )

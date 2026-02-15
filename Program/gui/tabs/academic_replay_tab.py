@@ -687,7 +687,7 @@ def _display_rvnd_inter_iterations(logs: List[Dict], dataset: Dict[str, Any] = N
     df = pd.DataFrame(table_data)
     st.dataframe(
         df, 
-        use_container_width=True, 
+        width="stretch", 
         hide_index=True,
         column_config={
             "Rute Hasil": st.column_config.TextColumn("Rute Hasil", width="medium"),
@@ -1607,7 +1607,7 @@ def render_academic_replay() -> None:
             })
 
         st.dataframe(pd.DataFrame(vehicle_items),
-                     use_container_width=True, hide_index=True)
+                     width="stretch", hide_index=True)
 
     # ============================================================
     # SECTION 2: Run Optimization Button (Inline)
