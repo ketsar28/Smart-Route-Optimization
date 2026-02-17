@@ -6,7 +6,7 @@ Consolidates logic from sweep_nn.py, acs_solver.py, and rvnd.py.
 import json
 import random
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 # Import core modules
 import sweep_nn
@@ -18,6 +18,27 @@ DATA_DIR = Path(__file__).resolve().parent / "data" / "processed"
 INSTANCE_PATH = DATA_DIR / "parsed_instance.json"
 DISTANCE_PATH = DATA_DIR / "parsed_distance.json"
 OUTPUT_PATH = DATA_DIR / "academic_replay_results.json"
+
+def calculate_fleet_costs(routes: List[Dict], fleet_data: Dict[str, Dict]) -> Tuple[float, List[Dict]]:
+    """Helper to calculate fixed and variable costs for a set of routes."""
+    total_cost = 0.0
+    breakdown = []
+    for r in routes:
+        v_type = r.get("vehicle_type")
+        if v_type in fleet_data:
+            f = fleet_data[v_type]
+            fix = f.get("fixed_cost", 0.0)
+            var = f.get("variable_cost_per_km", 0.0) * r.get("total_distance", 0.0)
+            route_cost = fix + var
+            breakdown.append({
+                "cluster_id": r["cluster_id"],
+                "vehicle_type": v_type,
+                "fixed_cost": fix,
+                "variable_cost": var,
+                "total_cost": route_cost
+            })
+            total_cost += route_cost
+    return total_cost, breakdown
 
 def run_academic_replay(
     user_vehicles: List[Dict] = None,
@@ -60,10 +81,10 @@ def run_academic_replay(
             "travel_time_matrix": travel_matrix
         }
     else:
-        with open(INSTANCE_PATH, 'r', encoding='utf-8') as f:
-            instance = json.load(f)
         with open(DISTANCE_PATH, 'r', encoding='utf-8') as f:
             distance_data = json.load(f)
+
+    fleet_data = {f["id"]: f for f in instance.get("fleet", [])}
 
     seed_val = user_acs_params.get("seed", 84) if user_acs_params else 84
     rng = random.Random(seed_val)
@@ -115,6 +136,23 @@ def run_academic_replay(
         if "iteration_logs" in metrics:
             acs_logs.extend(metrics["iteration_logs"])
 
+    # --- PHASE 3.5: ACS SUMMARY (For UI Detail) ---
+    acs_total_dist = sum(r.get("total_distance", 0.0) for r in acs_routes)
+    acs_total_travel = sum(r.get("total_travel_time", 0.0) for r in acs_routes)
+    acs_total_service = sum(r.get("total_service_time", 0.0) for r in acs_routes)
+    acs_total_wait = sum(r.get("total_wait_time", 0.0) for r in acs_routes)
+    acs_total_time = acs_total_travel + acs_total_service + acs_total_wait
+    
+    # Calculate costs for ACS routes
+    acs_total_cost, _ = calculate_fleet_costs(acs_routes, fleet_data)
+    
+    acs_summary_data = {
+        "total_distance": acs_total_dist,
+        "total_time": acs_total_time,
+        "total_cost": acs_total_cost,
+        "num_routes": len(acs_routes)
+    }
+
     # --- PHASE 4: RVND (GLOBAL INTER) ---
     print("[Academic Replay] Running RVND Inter-route...")
     optimized_routes, rvnd_logs = rvnd.rvnd_inter(
@@ -131,7 +169,6 @@ def run_academic_replay(
     intra_results = []
     all_logs = sweep_logs + nn_logs + acs_logs + rvnd_logs
     
-    fleet_data = {f["id"]: f for f in instance["fleet"]}
     for route in optimized_routes:
         improved = rvnd.rvnd_intra(
             route["sequence"],
@@ -206,24 +243,7 @@ def run_academic_replay(
         final_routes.append(route_entry)
 
     # --- PHASE 6: CALCULATE COSTS AND METADATA ---
-    total_cost = 0.0
-    cost_entries = []
-    
-    for r in final_routes:
-        v_type = r["vehicle_type"]
-        if v_type in fleet_data:
-            f = fleet_data[v_type]
-            fix = f.get("fixed_cost", 0.0)
-            var = f.get("variable_cost_per_km", 0.0) * r.get("total_distance", 0.0)
-            route_cost = fix + var
-            cost_entries.append({
-                "cluster_id": r["cluster_id"],
-                "vehicle_type": v_type,
-                "fixed_cost": fix,
-                "variable_cost": var,
-                "total_cost": route_cost
-            })
-            total_cost += route_cost
+    total_cost, cost_entries = calculate_fleet_costs(final_routes, fleet_data)
 
     summary = {
         "distance_before": sum(r["total_distance"] for r in initial_routes),
@@ -233,7 +253,23 @@ def run_academic_replay(
         "total_cost": total_cost
     }
 
-    # --- PHASE 7: ADD VEHICLE AVAILABILITY FOR UI ---
+    # --- PHASE 7: ACS + RVND SUMMARY (For UI Detail) ---
+    final_total_dist = sum(r.get("total_distance", 0.0) for r in final_routes)
+    final_total_travel = sum(r.get("total_travel_time", 0.0) for r in final_routes)
+    final_total_service = sum(r.get("total_service_time", 0.0) for r in final_routes)
+    final_total_wait = sum(r.get("total_wait_time", 0.0) for r in final_routes)
+    final_total_time = final_total_travel + final_total_service + final_total_wait
+
+    final_summary_data = {
+        "total_distance": final_total_dist,
+        "total_time": final_total_time,
+        "total_cost": total_cost,
+        "num_routes": len(final_routes),
+        "saving_distance": acs_total_dist - final_total_dist,
+        "saving_cost": acs_total_cost - total_cost
+    }
+
+    # --- PHASE 8: ADD VEHICLE AVAILABILITY FOR UI ---
     vehicle_availability = []
     available_vehicles = []
     for f in instance["fleet"]:
@@ -265,6 +301,8 @@ def run_academic_replay(
             "customers": instance["customers"]
         },
         "vehicle_availability": vehicle_availability,
+        "acs_summary": acs_summary_data,
+        "final_summary": final_summary_data,
         "available_vehicles": available_vehicles,
         "mode": "ACADEMIC_REPLAY",
         "status": "success"

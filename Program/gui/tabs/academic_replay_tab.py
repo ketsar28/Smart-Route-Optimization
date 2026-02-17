@@ -105,14 +105,14 @@ def _display_nn_iterations(logs: List[Dict]) -> None:
         for cluster_id in sorted(clusters):
             with st.expander(f"Cluster {cluster_id}", expanded=True):
                 cluster_logs = [
-                    l for l in nn_logs if l["cluster_id"] == cluster_id]
+                    log for log in nn_logs if log["cluster_id"] == cluster_id]
                 
                 # Calculate total distance for this cluster
-                total_dist = sum(l.get("distance", 0) for l in cluster_logs)
+                total_dist = sum(log.get("distance", 0) for log in cluster_logs)
 
                 # DISPLAY SUMMARY
-                summary = next((l for l in logs if l.get(
-                    "phase") == "NN_SUMMARY" and l.get("cluster_id") == cluster_id), None)
+                summary = next((log for log in logs if log.get(
+                    "phase") == "NN_SUMMARY" and log.get("cluster_id") == cluster_id), None)
                 if summary:
                     st.success(
                         f"**Rute Terbentuk:** {summary['route_sequence']} menggunakan armada **{summary['vehicle_type']}** | **Total Jarak:** {total_dist:.2f} km")
@@ -174,14 +174,14 @@ def _display_acs_progress_chart(cluster_logs: List[Dict], cluster_id: int) -> No
     seen_iters = set()
 
     # Extract best objective per iteration
-    for l in cluster_logs:
-        if l.get("step") == "iteration_summary":
-            it = l.get("iteration")
+    for log in cluster_logs:
+        if log.get("step") == "iteration_summary":
+            it = log.get("iteration")
             if it not in seen_iters:
                 iter_data.append({
                     "Iterasi": it,
-                    "Objective Z": float(l.get("best_objective", 0)),
-                    "Jarak": float(l.get("best_distance", 0))
+                    "Objective Z": float(log.get("best_objective", 0)),
+                    "Jarak": float(log.get("best_distance", 0))
                 })
                 seen_iters.add(it)
 
@@ -204,22 +204,22 @@ def _display_acs_iterations(logs: List[Dict]) -> None:
     """Display ACS iterations with full detail."""
     st.markdown("### Ant Colony System - Iterasi Semut")
 
-    acs_logs = [l for l in logs if l.get("phase") == "ACS"]
+    acs_logs = [log for log in logs if log.get("phase") == "ACS"]
 
     if not acs_logs:
         st.info("Tidak ada log iterasi ACS yang tersedia.")
         return
 
     # Group by cluster
-    clusters = set(l["cluster_id"] for l in acs_logs)
+    clusters = set(log["cluster_id"] for log in acs_logs)
 
     for cluster_id in sorted(clusters):
         st.markdown(f"#### Cluster {cluster_id}")
 
-        cluster_logs = [l for l in acs_logs if l["cluster_id"] == cluster_id]
+        cluster_logs = [log for log in acs_logs if log["cluster_id"] == cluster_id]
 
         # Pheromone initialization
-        init_logs = [l for l in cluster_logs if l.get(
+        init_logs = [log for log in cluster_logs if log.get(
             "step") == "init_pheromone"]
         if init_logs:
             with st.expander("ℹ️ Keterangan Rumus & Inisialisasi"):
@@ -233,7 +233,7 @@ def _display_acs_iterations(logs: List[Dict]) -> None:
                 """)
 
         # Objective function initialization
-        obj_init_logs = [l for l in cluster_logs if l.get(
+        obj_init_logs = [log for log in cluster_logs if log.get(
             "step") == "init_objective"]
         if obj_init_logs:
             obj = obj_init_logs[0]
@@ -267,8 +267,8 @@ def _display_acs_iterations(logs: List[Dict]) -> None:
                           f"{obj.get('initial_tw_violation', 0)}")
 
         # Iteration details with Pagination
-        iterations = sorted(list(set(l.get("iteration")
-                                     for l in cluster_logs if l.get("iteration"))))
+        iterations = sorted(list(set(log.get("iteration")
+                                     for log in cluster_logs if log.get("iteration"))))
 
         st.markdown("##### 📈 Progress Iterasi")
         _display_acs_progress_chart(cluster_logs, cluster_id)
@@ -305,32 +305,32 @@ def _display_acs_iterations(logs: List[Dict]) -> None:
 
         for iteration in visible_iterations:
             with st.expander(f"Iterasi {iteration}", expanded=False):
-                iter_logs = [l for l in cluster_logs if l.get(
+                iter_logs = [log for log in cluster_logs if log.get(
                     "iteration") == iteration]
 
                 # Predefined route (new format)
-                predefined_logs = [l for l in iter_logs if l.get(
+                predefined_logs = [log for log in iter_logs if log.get(
                     "step") == "route_predefined"]
                 if predefined_logs:
                     st.markdown("**Rute Terdefinisi (ACADEMIC REPLAY):**")
-                    for l in predefined_logs:
+                    for log in predefined_logs:
                         st.info(
-                            f"Semut {l.get('ant', '?')}: {l.get('route', [])} - {l.get('description', '')}")
+                            f"Semut {log.get('ant', '?')}: {log.get('route', [])} - {log.get('description', '')}")
 
                 # Route evaluation (new format - with OBJECTIVE FUNCTION)
-                eval_logs = [l for l in iter_logs if l.get(
+                eval_logs = [log for log in iter_logs if log.get(
                     "step") == "route_evaluation"]
                 if eval_logs:
                     st.markdown("**Evaluasi Rute (Z = αD + βT + γTW):**")
                     df = pd.DataFrame([{
-                        "Semut": l.get("ant", "?"),
-                        "Rute": str(l.get("route", [])),
-                        "Jarak (D)": l.get("distance", 0),
-                        "Waktu (T)": l.get("service_time", 0) + l.get("distance", 0),
-                        "Pelanggaran TW": l.get("tw_violation", 0),
-                        "Waktu Tunggu": l.get("wait_time", 0),
-                        "Fungsi Tujuan (Z)": l.get("objective", "-")
-                    } for l in eval_logs])
+                        "Semut": log.get("ant", "?"),
+                        "Rute": str(log.get("route", [])),
+                        "Jarak (D)": log.get("distance", 0),
+                        "Waktu (T)": log.get("service_time", 0) + log.get("distance", 0),
+                        "Pelanggaran TW": log.get("tw_violation", 0),
+                        "Waktu Tunggu": log.get("wait_time", 0),
+                        "Fungsi Tujuan (Z)": log.get("objective", "-")
+                    } for log in eval_logs])
 
                     # Clean up: Remove 0 values for clearer display
                     if (df["Pelanggaran TW"] == 0).all():
@@ -342,37 +342,37 @@ def _display_acs_iterations(logs: List[Dict]) -> None:
 
                 # Ant route construction (old format compatibility)
                 ant_logs = [
-                    l for l in iter_logs if "ant" in l and "step" in l and "probabilities" in l]
+                    log for log in iter_logs if "ant" in log and "step" in log and "probabilities" in log]
                 if ant_logs:
                     st.markdown("**Konstruksi Rute:**")
                     df = pd.DataFrame([{
-                        "Semut": l["ant"],
-                        "Langkah": l["step"],
-                        "Dari Node": l["from_node"],
-                        "q": l.get("random_q", "N/A"),
-                        "Keputusan": l.get("decision", "N/A"),
-                        "Terpilih": l["selected"],
-                        "Probabilitas": str(l["probabilities"])[:50] + "..."
-                    } for l in ant_logs])
+                        "Semut": log["ant"],
+                        "Langkah": log["step"],
+                        "Dari Node": log["from_node"],
+                        "q": log.get("random_q", "N/A"),
+                        "Keputusan": log.get("decision", "N/A"),
+                        "Terpilih": log["selected"],
+                        "Probabilitas": str(log["probabilities"])[:50] + "..."
+                    } for log in ant_logs])
                     st.dataframe(df, use_container_width=True, hide_index=True)
 
                 # Route evaluation (old format compatibility)
                 route_logs = [
-                    l for l in iter_logs if "route" in l and "objective" in l]
+                    log for log in iter_logs if "route" in log and "objective" in log]
                 if route_logs:
                     st.markdown("**Evaluasi Rute:**")
                     df = pd.DataFrame([{
-                        "Semut": l["ant"],
-                        "Rute": str(l["route"]),
-                        "Jarak": l["distance"],
-                        "Waktu Layanan": l["service_time"],
-                        "Pelanggaran TW": l["tw_violation"],
-                        "Fungsi Tujuan": l["objective"]
-                    } for l in route_logs])
+                        "Semut": log["ant"],
+                        "Rute": str(log["route"]),
+                        "Jarak": log["distance"],
+                        "Waktu Layanan": log["service_time"],
+                        "Pelanggaran TW": log["tw_violation"],
+                        "Fungsi Tujuan": log["objective"]
+                    } for log in route_logs])
                     st.dataframe(df, use_container_width=True, hide_index=True)
 
                 # Iteration summary (handle both old and new formats)
-                summary_logs = [l for l in iter_logs if l.get("step") == "iteration_summary"]
+                summary_logs = [log for log in iter_logs if log.get("step") == "iteration_summary"]
                 if summary_logs:
                     s = summary_logs[0]
                     best_route = s.get('best_route', [])
@@ -401,7 +401,44 @@ def _display_acs_iterations(logs: List[Dict]) -> None:
                         else:
                             m4.metric("Status", "✅ Layak")
 
-    # Display ACS iterations with full detail.\n    # ... (existing code)
+
+def _display_acs_summary(result: Dict[str, Any]) -> None:
+    """Display ACS-only results summary for comparison."""
+    summary = result.get("acs_summary")
+    if not summary:
+        return
+
+    st.markdown("---")
+    st.markdown("### 📊 Ringkasan Hasil ACS (Sebelum RVND)")
+    st.info("Poin ini menunjukkan hasil murni dari Ant Colony System sebelum dilakukan optimasi lanjutan oleh RVND. Gunakan ini untuk membandingkan performa antar algoritma.")
+
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Total Jarak (ACS)", f"{summary['total_distance']:.2f} km")
+    m2.metric("Total Waktu (ACS)", f"{summary['total_time']:.0f} menit")
+    m3.metric("Total Biaya (ACS)", f"Rp {summary['total_cost']:,.0f}")
+
+
+def _display_rvnd_summary(result: Dict[str, Any]) -> None:
+    """Display Final (ACS + RVND) results summary for comparison."""
+    summary = result.get("final_summary")
+    if not summary:
+        return
+
+    st.markdown("---")
+    st.markdown("### 🚀 Ringkasan Akhir (ACS + RVND)")
+    st.success("Ini adalah hasil akhir setelah rute ACS dioptimasi lebih lanjut oleh RVND. Lihat penghematan yang berhasil didapatkan di bawah ini.")
+
+    m1, m2, m3 = st.columns(3)
+    
+    # Savings metrics with deltas
+    save_dist = summary.get("saving_distance", 0.0)
+    save_cost = summary.get("saving_cost", 0.0)
+    
+    m1.metric("Total Jarak Akhir", f"{summary['total_distance']:.2f} km", 
+              delta=f"-{save_dist:.2f} km" if save_dist > 0.001 else None)
+    m2.metric("Total Waktu Akhir", f"{summary['total_time']:.0f} menit")
+    m3.metric("Total Biaya Akhir", f"Rp {summary['total_cost']:,.0f}",
+              delta=f"-Rp {save_cost:,.0f}" if save_cost > 100 else None)
 
 def _generate_verification_log(routes_snapshot: List[List[int]], dataset: Dict[str, Any]) -> None:
     """
@@ -1838,12 +1875,14 @@ def render_academic_replay() -> None:
 
     with tab_acs:
         _display_acs_iterations(logs)
+        _display_acs_summary(result)
 
     with tab_rvnd:
         # Combined RVND Inter + Intra in one tab
         _display_rvnd_inter_iterations(logs, dataset=dataset)
         st.markdown("---")
         _display_rvnd_intra_iterations(logs)
+        _display_rvnd_summary(result)
 
     with tab_final:
         _display_vehicle_assignment(result)
