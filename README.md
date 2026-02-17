@@ -34,14 +34,28 @@ Saya buat sistem ini fleksibel untuk berbagai jenis kendaraan (kayak truk besar,
 **2. Transparansi Algoritma (Academic Replay)**
 Ini fitur yang paling saya banggakan. Saya nggak mau hasil rutenya keluar gitu aja tanpa penjelasan. Lewat _Academic Replay_, kita bisa lihat gimana algoritma ini mikir langkah demi langkah sampai ketemu rute terbaik. Fitur ini sangat berguna untuk validasi akademis.
 
-**3. Visualisasi Peta & Analisis**
+**3. Laporan & Audit Performa (NEW!)**
+Hasil optimasi sekarang dilengkapi detail komparatif. Kita bisa membandingkan performa murni **Ant Colony System** dengan hasil akhir setelah dipoles oleh **RVND**. Penghematan jarak dan biaya ditampilkan secara eksplisit untuk memudahkan audit dan pengambilan keputusan.
+
+**4. Visualisasi Peta & Analisis**
 Hasilnya saya tampilin di peta interaktif. Kita bisa lihat jelas jalur yang dilewati, barang yang dibawa tiap kendaraan, sampai status tiap titik. Kalau ada titik yang nggak bisa dilayani, sistem bakal jelasin alasannya secara jujur.
 
-**4. Input Data Simpel**
+**5. Input Data Simpel**
 Data bisa dimasukkan lewat Excel atau tinggal klik-klik aja di peta. Saya bikin se-praktis mungkin buat kebutuhan di lapangan.
 
-**5. Stabilitas & Keandalan Tinggi (NEW!)**
+**6. Stabilitas & Keandalan Tinggi**
 Sistem ini dilengkapi mekanisme **Multi-Start Optimization**. Jika algoritma menemui rute yang sangat rumit atau muatan yang hampir melampaui kapasitas, sistem akan otomatis melakukan pencarian ulang (retries) dengan strategi yang berbeda sampai menemukan solusi yang paling stabil.
+
+---
+
+## 📈 Update Terbaru: Fitur Transparansi v2.1 (Februari 2026)
+
+Baru saja ditambahkan fitur **Dashboard Audit Transparansi** di mode Academic Replay:
+
+- **Baseline Comparison**: Lihat hasil murni ACS sebelum dioptimasi oleh RVND.
+- **Savings Analysis**: Informasi otomatis penghematan jarak (`km`) dan biaya (`Rp`) yang berhasil didapatkan oleh algoritma.
+- **Presisi Tinggi**: Perhitungan jarak kini menggunakan presisi hingga 4 desimal untuk memastikan efisiensi sekecil apapun tertangkap di sistem.
+- **Code Cleanup**: Refactoring total pada modul `academic_replay.py` untuk performa yang lebih ringan dan kode yang lebih bersih.
 
 ---
 
